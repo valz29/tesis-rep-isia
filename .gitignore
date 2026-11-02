@@ -1,0 +1,86 @@
+# --- Secretos ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist
+
+# --- Datos clinicos y datasets (nunca al repo) ---
+model/data/
+model/splits/
+data/
+datasets/
+*.dcm
+
+# --- Entrenamiento: corridas y checkpoints ---
+model/runs/
+model/entorno_instalado.txt
+runs/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.onnx
+*.tflite
+lightning_logs/
+wandb/
+mlruns/
+tensorboard/
+
+# --- Imagenes (pacientes, capturas, resultados) ---
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.bmp
+*.heic
+# Excepcion: assets de la app (iconos, logos) se agregan con -f si corresponde
+!app/assets/**
+
+# --- Python ---
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+
+# --- Flutter / Android ---
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.pub-cache/
+app/build/
+app/android/.gradle/
+app/android/local.properties
+app/android/**/GeneratedPluginRegistrant.java
+.dart_tool/
+.pub-cache/
+build/
+.gradle/
+local.properties
+
+# --- IDE / SO ---
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Logs y temporales ---
+*.log
+*.tmp
+*.bak
