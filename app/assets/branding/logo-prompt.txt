@@ -1,0 +1,5 @@
+Tool: built-in image_gen.imagegen (image edit)
+Input: user-provided eye-and-smartphone reference
+Transparent background: true
+
+Use case: precise-object-edit. Edit target: the supplied green/teal eye-and-smartphone logo. Asset type: app welcome-screen logo for Retinazo. Remove the smartphone completely, including its outline, top speaker and bottom home button. Preserve only the existing stylized eye: its almond-shaped outer contours, circular iris, dark teal pupil, white reflections and branching retinal vessels, keeping the exact reference proportions, rich teal-to-emerald green gradients and polished appearance. Center the isolated eye horizontally and vertically with balanced small padding. Truly transparent background around the mark and in the open spaces where appropriate. Keep the white sclera and white vessel details inside the eye. No phone remnants, no text, no new icons, no lettering, no badge, no background shadow. Eye only.
