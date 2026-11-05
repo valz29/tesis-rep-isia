@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rd_app/app/app.dart';
+import 'package:rd_app/features/auth/domain/entities/staff_member.dart';
 import 'package:rd_app/features/patients/domain/entities/patient.dart';
 import 'package:rd_app/features/evaluations/domain/entities/evaluation_draft.dart';
 import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
@@ -37,6 +38,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(const RetinazoApp());
+    await tester.pumpAndSettle();
     expect(find.text('Retinazo'), findsOneWidget);
     await tapVisible(tester, find.text('Registrarse'));
     await tester.enterText(
@@ -47,12 +49,21 @@ void main() {
       find.byType(TextFormField).at(1),
       'demo@example.com',
     );
-    await tester.enterText(find.byType(TextFormField).at(2), 'demo');
+    await tester.enterText(find.byType(TextFormField).at(2), 'demo12345');
     await tester.enterText(find.byType(TextFormField).at(3), 'otro');
     await tapVisible(tester, find.widgetWithText(FilledButton, 'Registrarse'));
     expect(find.text('Las contraseñas deben coincidir'), findsOneWidget);
-    await tester.enterText(find.byType(TextFormField).at(3), 'demo');
+    await tester.enterText(find.byType(TextFormField).at(3), 'demo12345');
     await tapVisible(tester, find.widgetWithText(FilledButton, 'Registrarse'));
+    expect(
+      find.text('Confirma tu correo para activar tu cuenta.'),
+      findsOneWidget,
+    );
+    expect(find.byType(HomeScreen), findsNothing);
+    await tapVisible(
+      tester,
+      find.text('Ya confirmé mi correo · Iniciar sesión'),
+    );
     expect(find.text('demo@example.com'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).at(0), '');
     await tapVisible(
@@ -64,7 +75,7 @@ void main() {
       find.byType(TextFormField).at(0),
       'demo@example.com',
     );
-    await tester.enterText(find.byType(TextFormField).at(1), 'demo');
+    await tester.enterText(find.byType(TextFormField).at(1), 'demo12345');
     await tapVisible(
       tester,
       find.widgetWithText(FilledButton, 'Iniciar sesión'),
@@ -155,6 +166,60 @@ void main() {
     final fresh = await createDependencies();
     expect(fresh.session.patients.patients, isEmpty);
     fresh.dispose();
+  });
+
+  testWidgets('Patient edits preserve identity and update the details page', (
+    tester,
+  ) async {
+    final dependencies = await createDependencies(seedPatient: true);
+    await tester.pumpWidget(
+      harness(
+        dependencies,
+        PatientSelectionScreen(sesion: dependencies.session),
+      ),
+    );
+    await tapVisible(tester, find.text(patient.nombreCompleto));
+    await tapVisible(tester, find.text('Editar paciente'));
+    await tester.enterText(
+      find.byKey(const Key('patient-name')),
+      'Nombre actualizado',
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.widgetWithText(FilledButton, 'Guardar'));
+    expect(dependencies.session.patients.patients.single.id, patient.id);
+    expect(
+      dependencies.session.patients.patients.single.nombres,
+      'Nombre actualizado',
+    );
+    expect(
+      find.text('Nombre actualizado ${patient.apellidos}'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Admin can register, edit and reassign any patient', (
+    tester,
+  ) async {
+    final dependencies = await createDependencies(seedPatient: true);
+    dependencies.session.auth.personal = const StaffMember(
+      id: 'admin-1',
+      usuario: 'admin@example.invalid',
+      nombre: 'Admin',
+      role: AccountRole.admin,
+    );
+    await tester.pumpWidget(
+      harness(
+        dependencies,
+        PatientSelectionScreen(sesion: dependencies.session),
+      ),
+    );
+    expect(find.byTooltip('Registrar paciente'), findsOneWidget);
+    await tapVisible(tester, find.text(patient.nombreCompleto));
+    expect(find.text('Editar paciente'), findsOneWidget);
+    expect(find.text('Nueva evaluación'), findsOneWidget);
+    expect(find.text('Cambiar responsable'), findsOneWidget);
+    expect(find.text('Profesional responsable'), findsOneWidget);
   });
 
   testWidgets('Menu supports a narrow screen and enlarged text', (

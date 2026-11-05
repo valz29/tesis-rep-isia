@@ -1,5 +1,7 @@
 import '../validators/input_validators.dart';
 
+import 'package:rd_app/app/app_scope.dart';
+
 import 'package:flutter/material.dart';
 
 import 'package:rd_app/core/theme/app_theme.dart';
@@ -13,6 +15,31 @@ class RecoveryScreen extends StatefulWidget {
 class _RecoveryScreenState extends State<RecoveryScreen> {
   final _form = GlobalKey<FormState>();
   bool _revisado = false;
+  bool _busy = false;
+  String? _error;
+  final _email = TextEditingController();
+  @override
+  void dispose() {
+    _email.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (!_form.currentState!.validate()) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final auth = AppScope.of(context).auth;
+    final ok = await auth.recover(_email.text);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _revisado = ok;
+      _error = ok ? null : auth.error;
+    });
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Recuperar acceso')),
@@ -35,6 +62,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             Form(
               key: _form,
               child: TextFormField(
+                controller: _email,
                 keyboardType: TextInputType.emailAddress,
                 decoration: AppTheme.campo(
                   'Correo electrónico',
@@ -45,17 +73,18 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             ),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: () {
-                if (_form.currentState!.validate()) {
-                  setState(() => _revisado = true);
-                }
-              },
+              onPressed: _busy ? null : _send,
               child: const Text('Continuar'),
             ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Text(_error!),
+              ),
             if (_revisado) ...[
               const SizedBox(height: 16),
               const Text(
-                'La recuperación de acceso aún no está disponible.',
+                'Si existe una cuenta con ese correo, recibirás un enlace para recuperar el acceso.',
                 textAlign: TextAlign.center,
               ),
             ],

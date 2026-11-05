@@ -1,3 +1,4 @@
+import '../../domain/entities/evaluation_image.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/repositories/evaluation_repository.dart';
 
@@ -10,6 +11,10 @@ class InMemoryEvaluationRepository implements EvaluationRepository {
   Future<void> save(Evaluation evaluation) async {
     _records.putIfAbsent(evaluation.id, () => evaluation);
   }
+
+  @override
+  Future<List<EvaluationImage>> loadImages(String evaluationId) async =>
+      _records[evaluationId]?.imagenes ?? const [];
 
   @override
   Future<void> clear() async => _records.clear();

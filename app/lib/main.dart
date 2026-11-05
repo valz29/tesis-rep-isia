@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'app/app.dart';
+import 'app/bootstrap.dart';
 
-void main() => runApp(const RetinazoApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const AppBootstrap());
+}

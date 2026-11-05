@@ -39,23 +39,29 @@ class HistoryScreen extends StatelessWidget {
               child: Card(
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(12),
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(7),
-                    child: Image.memory(
-                      e.imagenes.first.bytes,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      cacheWidth: 128,
-                    ),
-                  ),
+                  leading: e.imagenes.isEmpty
+                      ? const SizedBox(
+                          width: 56,
+                          height: 56,
+                          child: Icon(Icons.image_not_supported_outlined),
+                        )
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(7),
+                          child: Image.memory(
+                            e.imagenes.first.bytes,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            cacheWidth: 128,
+                          ),
+                        ),
                   title: Text(
                     sesion.patients.byId(e.patientId)?.nombreCompleto ??
                         'Paciente',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
-                    '${e.fechaLabel}\n${e.ojo.label} · 3 imágenes\nPendiente de análisis',
+                    '${e.fechaLabel}\n${e.ojo.label} · ${e.imageCount} imágenes\n${e.statusLabel}',
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => AppRoutes.result(context, e),

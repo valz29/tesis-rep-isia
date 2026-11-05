@@ -1,59 +1,60 @@
 # Retinazo
 
-Aplicación Flutter para el recorrido de evaluación de tres imágenes de un mismo ojo. El proyecto está organizado con Clean Architecture por funcionalidad y conserva la interfaz verde de Retinazo.
+Aplicación Flutter organizada con Clean Architecture por funcionalidad, con la identidad verde y el flujo de tres imágenes del mismo ojo.
 
-## Estado actual
+## Estado al 5 de noviembre de 2026 · versión 1.2.0
 
-- Bienvenida, acceso, registro visual y recuperación visual.
-- Registro temporal de pacientes, búsqueda y selección del ojo.
-- Selección de tres imágenes desde cámara/galería, vista previa, reemplazo, eliminación y confirmación conjunta.
-- Preparación de la evaluación, resultado pendiente, guardado temporal, historial y conteos.
-- Contratos de repositorios, casos de uso y controladores separados de las pantallas.
+Implementado en código: acceso por correo y contraseña, registro con confirmación, recuperación de contraseña, restauración de sesión, pacientes con creación/edición, búsqueda, historial y borradores de evaluación. Los adaptadores usan Supabase y las políticas SQL separan expedientes por profesional; el administrador gestiona todos los expedientes y las cuentas.
 
-El ingreso acepta correo válido y contraseña de cuatro o más caracteres, sin verificar cuentas reales. Registrarse valida campos y vuelve al ingreso con el correo precargado, sin crear una cuenta. Recuperar acceso no envía correos.
+Se creó el proyecto Supabase Retinazo y se aplicaron las cuatro migraciones. La cuenta administradora inicial está creada y verificada. Se comprobaron contra el servicio alojado el inicio de sesión, el rol protegido, las lecturas autorizadas, el rechazo de acceso anónimo y el bloqueo de cambios directos de rol y la gestión exclusiva mediante RPC autorizada. La validación completa en teléfono físico, incluidos enlaces de correo y cámara, sigue pendiente.
 
-Los datos e imágenes permanecen en memoria y se eliminan al cerrar sesión o reiniciar la aplicación. No hay backend, base de datos, subida de archivos ni modelo conectado. El selector del sistema puede crear archivos temporales propios. Las evaluaciones no presentan grados o confianza ficticios.
+FastAPI está publicado en Render y guarda los originales en el bucket R2. Al guardar una evaluación se envían sus tres fotos; el historial puede recuperarlas desde la nube. El recorrido remoto se validó con PNG y cuentas sintéticas, incluyendo permisos y limpieza de datos de prueba. Los borradores anteriores que solo guardaron metadatos no adquieren fotos automáticamente. El modelo sigue pendiente; no se inventan grados ni confianza.
+
+Google está implementado como opción de acceso, desactivada hasta configurar el proveedor OAuth. El correo integrado de Supabase solo entrega a miembros del equipo y tiene un límite actual de dos mensajes por hora; para usuarios externos hace falta SMTP propio.
+
+Ver [administración y registro confirmado](../docs/ADMINISTRATION.md) para el alcance de Retinazo 1.1.0, las restricciones, pruebas y funciones por rol.
 
 ## Estructura
 
 ```text
 lib/
-  app/            Arranque, inyección, sesión y navegación
-  core/           Errores comunes y tema
-  shared/         Widgets generales
+  app/            Arranque, configuración, inyección, sesión y navegación
+  core/           Errores, traducción de fallos de infraestructura y tema
+  shared/         Widgets comunes
   features/
     auth/         domain / data / presentation
     patients/     domain / data / presentation
     evaluations/  domain / data / presentation
+    admin/        domain / data / presentation
     home/         presentation
 ```
 
-Cada módulo separa dominio, implementaciones de datos y presentación. `AppDependencies` conecta los repositorios actuales en memoria; el acceso a cámara/galería está aislado en un adaptador de datos.
+`main.dart` inicia `AppBootstrap`, que valida la configuración y crea `AppDependencies.remote`. Los contratos del dominio no dependen de Supabase. Los repositorios en memoria se conservan para pruebas con inyección explícita; el arranque de producción nunca cambia a ellos si falla la conexión. Cerrar sesión limpia tokens y caché local, conservando los registros remotos.
 
-Consulta [la explicación de arquitectura](docs/ARCHITECTURE.md) para ver responsabilidades, entidades, flujo de dependencias, cambios realizados y puntos de integración con el sistema propuesto en la tesis.
+Consulta [arquitectura](docs/ARCHITECTURE.md), [base de datos](../docs/DATABASE.md) y [activación del esquema](../supabase/README.md).
 
 ## Ejecutar y verificar
 
-Con el SDK de Flutter disponible en el PATH:
+Copia `config/supabase.example.json` a `config/supabase.local.json` y completa URL de Supabase, clave pública e `IMAGE_API_URL=https://retinazo-images.onrender.com`. El archivo local está excluido de Git. Nunca incluyas contraseñas o claves de servidor en Flutter.
 
 ```sh
 flutter pub get
-flutter run
+flutter run --dart-define-from-file=config/supabase.local.json
 flutter analyze
 flutter test
-flutter build apk --release
+flutter build apk --release --dart-define-from-file=config/supabase.local.json
 ```
 
-APK generado: `build/app/outputs/flutter-apk/app-release.apk`. La configuración Android actual utiliza firma de desarrollo para instalación de pruebas.
+APK: `build/app/outputs/flutter-apk/app-release.apk`. Android utiliza firma de desarrollo para instalaciones de prueba. iOS y captura en teléfono físico aún requieren validación.
 
-Las pruebas verifican reglas y recorridos con dependencias inyectadas. La cámara, permisos y captura óptica necesitan validación en teléfono real.
+En Supabase ya está configurado `com.devloop.retinazo://auth-callback/` como Site URL y retorno permitido de Auth. La confirmación de correo permanece activa. Los enlaces PKCE deben abrirse en el dispositivo donde se inició la solicitud.
+
+Referencias: [retorno móvil](https://supabase.com/docs/guides/auth/native-mobile-deep-linking) y [SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ## Identidad visual
 
-Nombre visible: Retinazo. Paleta principal `#0F6B6B`, fondo `#F2F6F6` y tinta `#17292B`. Se conservan el menú lateral verde y los bloques claros con texto verde del inicio.
+Nombre: Retinazo. Verde `#0F6B6B`, fondo `#F2F6F6`, tinta `#17292B`. Logo: `assets/branding/retinazo-eye.png`.
 
-El logo está en `assets/branding/retinazo-eye.png`; el prompt de edición de la referencia del usuario se conserva en `assets/branding/logo-prompt.txt`.
+## Imágenes en R2: integración activa
 
-## Próxima etapa
-
-Persistencia, autenticación real e inferencia continúan pendientes. El contexto de tesis contempla FastAPI, PostgreSQL, un bucket de imágenes y un modelo basado en RETFound, todavía sin integrar. La reorganización no cierra las decisiones de protocolo clínico, entrenamiento, contrato del servidor o despliegue.
+Cloudflare R2 guarda los archivos y FastAPI en Render autoriza las operaciones. La configuración local contiene `IMAGE_API_URL=https://retinazo-images.onrender.com`. Guardar sube las tres fotos y el historial puede descargarlas después de reiniciar. La cuarta migración está aplicada. Render Free se suspende por inactividad; las solicitudes a la API permiten hasta tres minutos para tolerar la reactivación. La descarga directa de cada imagen mantiene un límite menor. Ver [R2_STORAGE.md](../docs/R2_STORAGE.md).

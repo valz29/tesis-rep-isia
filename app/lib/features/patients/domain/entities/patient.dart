@@ -4,6 +4,8 @@ enum Sexo { femenino, masculino }
 class Patient {
   final String id;
   final String dni;
+  final String? ownerId;
+  final String? ownerName;
   final String nombres;
   final String apellidos;
   final DateTime fechaNacimiento;
@@ -15,6 +17,8 @@ class Patient {
   const Patient({
     required this.id,
     required this.dni,
+    this.ownerId,
+    this.ownerName,
     required this.nombres,
     required this.apellidos,
     required this.fechaNacimiento,

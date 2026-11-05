@@ -17,6 +17,21 @@ class _HomeScreenState extends State<HomeScreen> {
   SessionController get _sesion => widget.sesion;
 
   void _abrir(int index) {
+    if (_sesion.isAdmin) {
+      switch (index) {
+        case 0:
+          AppRoutes.adminUsers(context);
+        case 1:
+          AppRoutes.patients(context);
+        case 2:
+          AppRoutes.history(context);
+        case 3:
+          AppRoutes.statistics(context);
+        default:
+          AppRoutes.adminAudit(context);
+      }
+      return;
+    }
     switch (index) {
       case 0:
         AppRoutes.patients(context);
@@ -50,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || ok != true) return;
     await _sesion.logout();
     if (!mounted) return;
-    AppRoutes.welcome(context);
+    // AuthGate drops the signed-in navigation stack.
   }
 
   static const _titulos = [
@@ -65,13 +80,67 @@ class _HomeScreenState extends State<HomeScreen> {
     Icons.history,
     Icons.bar_chart,
   ];
+  List<String> get _labels => _sesion.isAdmin
+      ? const [
+          'Usuarios',
+          'Todos los pacientes',
+          'Todas las evaluaciones',
+          'Estadísticas globales',
+          'Actividad administrativa',
+        ]
+      : _titulos;
+  List<IconData> get _icons => _sesion.isAdmin
+      ? const [
+          Icons.manage_accounts_outlined,
+          Icons.people_outline,
+          Icons.history,
+          Icons.bar_chart,
+          Icons.fact_check_outlined,
+        ]
+      : _iconos;
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Inicio')),
+    appBar: AppBar(title: Text(_sesion.isAdmin ? 'Administración' : 'Inicio')),
     drawer: _menuLateral(),
     body: PageBody(
       children: [
         const SizedBox(height: 12),
+        if (_sesion.isAdmin) ...[
+          Text(
+            'Panel de administración',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Gestiona las cuentas y todos los expedientes de Retinazo.',
+          ),
+          const SizedBox(height: 12),
+          ListenableBuilder(
+            listenable: _sesion.admin,
+            builder: (context, _) {
+              final o = _sesion.admin.overview;
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Chip(label: Text('${o.users} usuarios')),
+                  Chip(label: Text('${o.unconfirmed} correos pendientes')),
+                  Chip(label: Text('${o.inactive} desactivados')),
+                  Chip(label: Text('${o.patients} pacientes')),
+                  Chip(label: Text('${o.evaluations} evaluaciones')),
+                ],
+              );
+            },
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _sesion.refreshData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Actualizar panel'),
+            ),
+          ),
+        ],
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -86,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisExtent:
                 200 * MediaQuery.textScalerOf(context).scale(14) / 14,
           ),
-          itemCount: 4,
+          itemCount: _labels.length,
           itemBuilder: (context, i) => Material(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -102,10 +171,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(_iconos[i], size: 44, color: AppTheme.primario),
+                    Icon(_icons[i], size: 44, color: AppTheme.primario),
                     const SizedBox(height: 18),
                     Text(
-                      _titulos[i],
+                      _labels[i],
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 16,
@@ -179,6 +248,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
+                  _sesion.isAdmin
+                      ? 'Administrador · v1.1.0'
+                      : 'Profesional · v1.1.0',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 4),
+                Text(
                   (_sesion.auth.personal?.usuario ?? ''),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.75),
@@ -218,10 +294,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     () => Navigator.pop(context),
                     activa: true,
                   ),
-                  for (int i = 0; i < 4; i++)
+                  for (int i = 0; i < _labels.length; i++)
                     _opcionLateral(
-                      _iconos[i],
-                      _titulos[i].replaceAll('\n', ' '),
+                      _icons[i],
+                      _labels[i].replaceAll('\n', ' '),
                       () {
                         Navigator.pop(context);
                         _abrir(i);

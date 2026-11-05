@@ -1,3 +1,8 @@
+import '../../features/admin/presentation/pages/admin_users_screen.dart';
+import '../../features/admin/presentation/pages/admin_audit_screen.dart';
+import '../../features/admin/presentation/pages/admin_reassign_screen.dart';
+import '../../features/admin/presentation/pages/admin_evaluation_screen.dart';
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -14,6 +19,7 @@ import '../../features/auth/presentation/pages/recovery_screen.dart';
 import '../../features/home/presentation/pages/home_screen.dart';
 import '../../features/patients/presentation/pages/patient_selection_screen.dart';
 import '../../features/patients/presentation/pages/patient_form_screen.dart';
+import '../../features/patients/presentation/pages/patient_detail_screen.dart';
 import '../../features/evaluations/presentation/pages/eye_selection_screen.dart';
 import '../../features/evaluations/presentation/pages/capture_screen.dart';
 import '../../features/evaluations/presentation/pages/review_screen.dart';
@@ -50,6 +56,28 @@ abstract final class AppRoutes {
     _route<void>(const WelcomeScreen()),
     (_) => false,
   );
+  static Future<void> adminUsers(BuildContext c) => Navigator.push(
+    c,
+    _route<void>(AdminUsersScreen(session: AppScope.of(c))),
+  );
+  static Future<void> adminAudit(BuildContext c) => Navigator.push(
+    c,
+    _route<void>(AdminAuditScreen(session: AppScope.of(c))),
+  );
+  static Future<void> adminReassign(BuildContext c, String patientId) =>
+      Navigator.push(
+        c,
+        _route<void>(
+          AdminReassignScreen(patientId: patientId, session: AppScope.of(c)),
+        ),
+      );
+  static Future<void> adminEvaluation(BuildContext c, Evaluation e) =>
+      Navigator.push(
+        c,
+        _route<void>(
+          AdminEvaluationScreen(evaluation: e, session: AppScope.of(c)),
+        ),
+      );
   static Future<void> patients(BuildContext c, {bool paraEvaluar = false}) =>
       Navigator.push(
         c,
@@ -64,6 +92,18 @@ abstract final class AppRoutes {
     c,
     _route<Patient>(PatientFormScreen(sesion: AppScope.of(c))),
   );
+  static Future<Patient?> editPatient(BuildContext c, Patient p) =>
+      Navigator.push(
+        c,
+        _route<Patient>(PatientFormScreen(sesion: AppScope.of(c), existing: p)),
+      );
+  static Future<void> patientDetails(BuildContext c, Patient p) =>
+      Navigator.push(
+        c,
+        _route<void>(
+          PatientDetailScreen(patientId: p.id, session: AppScope.of(c)),
+        ),
+      );
   static Future<void> eye(BuildContext c, Patient p) => Navigator.push(
     c,
     _route<void>(EyeSelectionScreen(paciente: p, sesion: AppScope.of(c))),

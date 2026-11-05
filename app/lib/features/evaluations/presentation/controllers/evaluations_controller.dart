@@ -14,14 +14,40 @@ class EvaluationsController extends ChangeNotifier {
   final SaveEvaluation _save;
   List<Evaluation> _evaluations = const [];
   List<Evaluation> get evaluations => _evaluations;
+  bool _disposed = false;
+  int _epoch = 0;
   bool busy = false;
   String? error;
+  String? imageError;
+  String? loadingImagesFor;
   EvaluationsController(this._repository, this._create, this._save);
   bool isSaved(String id) => _evaluations.any((e) => e.id == id);
   int countByEye(OjoEvaluado eye) =>
       _evaluations.where((e) => e.ojo == eye).length;
   int get imageCount =>
-      _evaluations.fold(0, (count, e) => count + e.imagenes.length);
+      _evaluations.fold(0, (count, e) => count + e.imageCount);
+  Evaluation? byId(String id) {
+    for (final e in _evaluations) {
+      if (e.id == id) return e;
+    }
+    return null;
+  }
+
+  Future<void> load() async {
+    final epoch = ++_epoch;
+    try {
+      final records = await _repository.list();
+      if (_disposed || epoch != _epoch) return;
+      _evaluations = records;
+      error = null;
+    } on AppFailure catch (e) {
+      if (!_disposed && epoch == _epoch) error = e.message;
+      rethrow;
+    } finally {
+      _notify();
+    }
+  }
+
   Future<Evaluation?> prepare(
     EvaluationDraft draft,
     List<EvaluationImage> images,
@@ -30,7 +56,7 @@ class EvaluationsController extends ChangeNotifier {
     if (busy) return null;
     busy = true;
     error = null;
-    notifyListeners();
+    _notify();
     try {
       return await _create(draft, images, professionalId);
     } on AppFailure catch (e) {
@@ -41,18 +67,21 @@ class EvaluationsController extends ChangeNotifier {
       return null;
     } finally {
       busy = false;
-      notifyListeners();
+      _notify();
     }
   }
 
   Future<bool> save(Evaluation evaluation) async {
     if (busy) return false;
+    final epoch = _epoch;
     busy = true;
     error = null;
-    notifyListeners();
+    _notify();
     try {
       await _save(evaluation);
-      _evaluations = await _repository.list();
+      final records = await _repository.list();
+      if (_disposed || epoch != _epoch) return false;
+      _evaluations = records;
       return true;
     } on AppFailure catch (e) {
       error = e.message;
@@ -62,14 +91,58 @@ class EvaluationsController extends ChangeNotifier {
       return false;
     } finally {
       busy = false;
-      notifyListeners();
+      _notify();
+    }
+  }
+
+  Future<void> loadImages(String id) async {
+    if (loadingImagesFor != null) return;
+    final epoch = _epoch;
+    loadingImagesFor = id;
+    imageError = null;
+    _notify();
+    try {
+      final images = await _repository.loadImages(id);
+      if (_disposed || epoch != _epoch) return;
+      _evaluations = List.unmodifiable(
+        _evaluations.map(
+          (e) => e.id == id
+              ? e.withImages(images)
+              : e.imagesStored
+              ? e.withImages(const [])
+              : e,
+        ),
+      );
+    } on AppFailure catch (e) {
+      if (epoch == _epoch) imageError = e.message;
+    } catch (_) {
+      if (epoch == _epoch) imageError = 'No se pudieron recuperar las imágenes';
+    } finally {
+      if (epoch == _epoch) {
+        loadingImagesFor = null;
+        _notify();
+      }
     }
   }
 
   Future<void> clear() async {
+    _epoch++;
+    imageError = null;
+    loadingImagesFor = null;
     await _repository.clear();
     _evaluations = const [];
     error = null;
-    notifyListeners();
+    _notify();
+  }
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _epoch++;
+    super.dispose();
   }
 }

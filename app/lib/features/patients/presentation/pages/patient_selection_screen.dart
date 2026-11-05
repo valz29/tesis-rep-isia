@@ -36,7 +36,13 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
     }
   }
 
-  void _abrir(Patient p) => AppRoutes.eye(context, p);
+  void _abrir(Patient p) {
+    if (widget.paraEvaluar) {
+      AppRoutes.eye(context, p);
+    } else {
+      AppRoutes.patientDetails(context, p);
+    }
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -72,7 +78,27 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
                 icono: Icons.search,
               ).copyWith(fillColor: AppTheme.superficie),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () async {
+                try {
+                  await widget.sesion.patients.load();
+                } catch (_) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        widget.sesion.patients.error ??
+                            'No se pudieron actualizar los pacientes',
+                      ),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Actualizar pacientes'),
+            ),
+            const SizedBox(height: 12),
             if (widget.paraEvaluar) ...[
               const Text('Elige un paciente para evaluar uno de sus ojos.'),
               const SizedBox(height: 16),
@@ -92,7 +118,7 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
-                      'DNI: ${p.dni}  |  ${p.ageAt(DateTime.now())} años',
+                      'DNI: ${p.dni}  |  ${p.ageAt(DateTime.now())} años${widget.sesion.isAdmin ? '\nProfesional: ${p.ownerName ?? p.ownerId ?? 'Sin nombre'}' : ''}',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _abrir(p),
@@ -113,8 +139,10 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Usa el botón + para registrar un paciente.',
+                    Text(
+                      widget.sesion.isAdmin
+                          ? 'Los pacientes registrados por los profesionales aparecerán aquí.'
+                          : 'Usa el botón + para registrar un paciente.',
                       textAlign: TextAlign.center,
                     ),
                   ],

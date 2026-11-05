@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     setState(() => _cargando = false);
     if (ok) {
-      AppRoutes.home(context);
+      // AuthGate replaces the navigation stack after a successful sign-in.
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error ?? 'No se pudo iniciar sesión')),
@@ -128,6 +128,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   )
                 : const Text('Iniciar sesión'),
           ),
+          if (AppScope.of(context).googleEnabled) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _cargando
+                  ? null
+                  : () async {
+                      final auth = AppScope.of(context).auth;
+                      final ok = await auth.google();
+                      if (!context.mounted || ok) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            auth.error ?? 'No se pudo abrir Google',
+                          ),
+                        ),
+                      );
+                    },
+              icon: const Icon(Icons.account_circle_outlined),
+              label: const Text('Continuar con Google'),
+            ),
+          ],
           const SizedBox(height: 24),
         ],
       ),

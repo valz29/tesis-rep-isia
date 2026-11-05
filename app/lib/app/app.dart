@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import 'dependencies.dart';
 import 'app_scope.dart';
-import 'router/app_routes.dart';
+import 'auth_gate.dart';
 
 class RetinazoApp extends StatefulWidget {
   /// Injected dependencies are owned by the caller; defaults belong to the app.
@@ -29,7 +29,7 @@ class _RetinazoAppState extends State<RetinazoApp> {
       title: 'Retinazo',
       theme: AppTheme.light(),
       debugShowCheckedModeBanner: false,
-      home: AppRoutes.welcomePage(),
+      home: AuthGate(session: _dependencies.session),
     ),
   );
 }

@@ -9,9 +9,9 @@ class InMemoryPatientRepository implements PatientRepository {
   @override
   Future<Patient?> findById(String id) async => _records[id];
   @override
-  Future<Patient?> findByDni(String dni) async {
+  Future<Patient?> findByDni(String dni, {String? ownerId}) async {
     for (final p in _records.values) {
-      if (p.dni == dni) return p;
+      if (p.dni == dni && (ownerId == null || p.ownerId == ownerId)) return p;
     }
     return null;
   }
@@ -20,11 +20,22 @@ class InMemoryPatientRepository implements PatientRepository {
   Future<void> save(Patient patient) async {
     // Enforce uniqueness at the storage boundary too, even for concurrent calls.
     if (_records.values.any(
-      (p) => p.dni == patient.dni && p.id != patient.id,
+      (p) =>
+          p.dni == patient.dni &&
+          p.ownerId == patient.ownerId &&
+          p.id != patient.id,
     )) {
       throw const AppFailure('Este DNI ya está registrado en la sesión');
     }
     _records[patient.id] = patient;
+  }
+
+  @override
+  Future<void> update(Patient patient) async {
+    if (!_records.containsKey(patient.id)) {
+      throw const AppFailure('El paciente ya no está disponible');
+    }
+    await save(patient);
   }
 
   @override

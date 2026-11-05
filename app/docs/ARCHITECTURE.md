@@ -1,8 +1,8 @@
 # Arquitectura de Retinazo
 
-Estado: reorganización de la aplicación Flutter, 2 de noviembre de 2026.
+Estado: aplicación Flutter con Supabase y almacenamiento R2 mediante FastAPI en Render, 5 de noviembre de 2026.
 
-Esta arquitectura conserva el recorrido y la identidad visual del aplicativo. Separa responsabilidades para continuar el desarrollo. La autenticación sigue siendo de prueba, los datos permanecen en memoria y las evaluaciones quedan pendientes de análisis. No se implementaron servidor, base de datos, carga de archivos ni inferencia.
+Esta arquitectura conserva el recorrido y la identidad visual del aplicativo. La implementación actual usa adaptadores Supabase para autenticación, pacientes y evaluaciones, y `ImageApiClient` para las imágenes mediante FastAPI en Render y R2. El esquema alojado y el administrador inicial están activados. El modelo aún no está integrado. Las secciones sobre la reorganización original describen su etapa inicial; la actualización al final detalla el cableado remoto actual.
 
 El documento `CONTEXTO_TESIS.md` proporcionado por el usuario se utiliza como contexto del sistema. Sus tecnologías propuestas y sus decisiones pendientes no se consideran implementadas por esta reorganización.
 
@@ -178,3 +178,29 @@ Las pruebas cubren navegación y formularios, flujo de tres imágenes, cancelaci
 `test/architecture/dependency_rules_test.dart` verifica las fronteras principales: dominio sin Flutter o infraestructura, presentación sin acceso directo a datos/cámara/HTTP y datos sin presentación. Es una protección automática de imports, no una auditoría completa de arquitectura.
 
 La cámara y sus permisos requieren una prueba adicional en un teléfono real. Las pruebas con repositorios inyectados no certifican el montaje óptico ni el comportamiento de dispositivos específicos.
+
+## Diseño relacional preparado posteriormente
+
+Se añadió en la raíz del repositorio `supabase/migrations/20261102130000_initial_schema.sql` con las tablas, restricciones y políticas de acceso para Supabase. El diseño incluye profesionales con expedientes privados y una cuenta administradora con consulta global. Las relaciones y la normalización se explican en [`../../docs/DATABASE.md`](../../docs/DATABASE.md).
+
+Ambas migraciones fueron aplicadas al proyecto alojado el 2 de noviembre de 2026.
+
+## Integración Supabase (2 de noviembre de 2026)
+
+`main → AppBootstrap → AppDependencies.remote → AuthGate` inicia la aplicación. `AppConfig` admite únicamente URL HTTPS y clave pública. `AuthLinkCoordinator` procesa los retornos de confirmación/recuperación PKCE. `SessionController` restaura la identidad y carga repositorios, descartando datos locales al cerrar sesión.
+
+`SupabaseAuthRepository`, `SupabasePatientRepository` y `SupabaseEvaluationRepository` implementan contratos del dominio. Los controladores y pantallas no importan Supabase. Los pacientes se pueden consultar y editar; el administrador tiene gestión global de expedientes y cuentas. El rol procede de `profiles`, nunca de metadatos editables del cliente. RLS garantiza el aislamiento en la base de datos.
+
+Los borradores usan la RPC transaccional `save_evaluation_draft`, definida en la segunda migración. Guardan paciente, ojo, observaciones y tres metadatos (posición, hash, tipo, tamaño). Las fotos locales se mantienen solo durante la sesión; el bucket queda pendiente. El estado `draft` evita indicar que están cargadas o listas para inferencia.
+
+La configuración pública local está excluida de Git. Google permanece desactivado hasta configurar OAuth. La URL de retorno ya está configurada y la confirmación de correo permanece activa. Para destinatarios externos falta SMTP. Auth y lecturas se comprobaron contra Supabase; correo y captura requieren validación completa en teléfono.
+
+Las implementaciones en memoria permanecen como dobles explícitos de pruebas; no hay sustitución automática cuando Supabase falla. Ver configuración y ejecución actuales en [README](../README.md).
+
+## Administración 1.1.0
+
+El módulo `features/admin` añade contratos, casos de uso, adaptadores y pantallas exclusivas, inyectados en `SessionController`. La tercera migración incorpora activación de perfiles, RPC administrativas y auditoría. El alcance vigente y la verificación se detallan en [ADMINISTRATION.md](../../docs/ADMINISTRATION.md). Las referencias anteriores a administrador de solo consulta describen la versión inicial y quedan sustituidas por esta ampliación.
+
+## Cloudflare R2 y FastAPI en Render (activo, 5 de noviembre de 2026)
+
+La elección de Cloudflare R2 sustituye la propuesta de Supabase Storage. FastAPI autoriza mediante Supabase y sube los originales verificados a R2; devuelve enlaces GET temporales al consultar imágenes. Está desplegado como Web Service en Render Free. Las cuentas y los datos estructurados siguen usando Supabase. El modelo permanece pendiente. La configuración local contiene `IMAGE_API_URL=https://retinazo-images.onrender.com`. `SupabaseEvaluationRepository` guarda primero el borrador y después solicita la carga a `ImageApiClient`; `loadImages` recupera las fotos al consultar el historial. El dominio no depende de HTTP ni Supabase. Se comprobaron permisos, persistencia e integridad contra los servicios alojados con cuentas y PNG sintéticos; el teléfono físico sigue pendiente. Ver [R2_STORAGE.md](../../docs/R2_STORAGE.md).

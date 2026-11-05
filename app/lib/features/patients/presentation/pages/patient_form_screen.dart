@@ -8,7 +8,8 @@ import 'package:rd_app/shared/widgets/page_body.dart';
 
 class PatientFormScreen extends StatefulWidget {
   final SessionController sesion;
-  const PatientFormScreen({super.key, required this.sesion});
+  final Patient? existing;
+  const PatientFormScreen({super.key, required this.sesion, this.existing});
   @override
   State<PatientFormScreen> createState() => _PatientFormScreenState();
 }
@@ -24,6 +25,23 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final _historia = TextEditingController();
   DateTime? _nacimiento;
   Sexo? _sexo;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.existing;
+    if (p == null) return;
+    _nombres.text = p.nombres;
+    _apellidos.text = p.apellidos;
+    _dni.text = p.dni;
+    _nacimiento = p.fechaNacimiento;
+    _sexo = p.sexo;
+    _fecha.text =
+        '${p.fechaNacimiento.day.toString().padLeft(2, '0')}/${p.fechaNacimiento.month.toString().padLeft(2, '0')}/${p.fechaNacimiento.year}';
+    _telefono.text = p.telefono ?? '';
+    _direccion.text = p.direccion ?? '';
+    _historia.text = p.historiaClinica ?? '';
+  }
 
   @override
   void dispose() {
@@ -60,10 +78,14 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   Future<void> _guardar() async {
     if (!_form.currentState!.validate()) return;
+    if (widget.existing != null && !widget.sesion.canEdit(widget.existing!)) {
+      return;
+    }
     String? opcional(TextEditingController c) =>
         c.text.trim().isEmpty ? null : c.text.trim();
     final controller = widget.sesion.patients;
     final p = await controller.register(
+      existing: widget.existing,
       dni: _dni.text,
       nombres: _nombres.text.trim(),
       apellidos: _apellidos.text.trim(),
@@ -89,7 +111,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.sesion.patients,
     builder: (context, _) => Scaffold(
-      appBar: AppBar(title: const Text('Nuevo paciente')),
+      appBar: AppBar(
+        title: Text(
+          widget.existing == null ? 'Nuevo paciente' : 'Editar paciente',
+        ),
+      ),
       body: PageBody(
         children: [
           Form(
@@ -147,11 +173,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                     'DNI',
                     icono: Icons.badge_outlined,
                   ),
-                  validator: (v) => v?.length != 8
-                      ? 'El DNI debe tener 8 dígitos'
-                      : widget.sesion.patients.byDni(v!) != null
-                      ? 'Este DNI ya está registrado en la sesión'
-                      : null,
+                  validator: (v) =>
+                      v?.length != 8 ? 'El DNI debe tener 8 dígitos' : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<Sexo>(
@@ -159,6 +182,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                     'Sexo',
                     icono: Icons.person_outline,
                   ),
+                  initialValue: _sexo,
                   items: const [
                     DropdownMenuItem(
                       value: Sexo.femenino,

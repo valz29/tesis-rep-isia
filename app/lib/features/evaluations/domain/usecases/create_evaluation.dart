@@ -8,7 +8,13 @@ class CreateEvaluation {
   final PatientRepository _patients;
   final String Function() _newId;
   final DateTime Function() _now;
-  const CreateEvaluation(this._patients, this._newId, this._now);
+  final EvaluationStatus initialStatus;
+  const CreateEvaluation(
+    this._patients,
+    this._newId,
+    this._now, {
+    this.initialStatus = EvaluationStatus.pendingAnalysis,
+  });
   Future<Evaluation> call(
     EvaluationDraft draft,
     List<EvaluationImage> images,
@@ -17,8 +23,12 @@ class CreateEvaluation {
     if (await _patients.findById(draft.patientId) == null) {
       throw const AppFailure('Selecciona un paciente registrado');
     }
+    if (images.length != 3) {
+      throw const AppFailure('Selecciona tres imágenes diferentes');
+    }
     return Evaluation(
       id: _newId(),
+      status: initialStatus,
       patientId: draft.patientId,
       ojo: draft.ojo,
       observaciones: draft.observaciones,

@@ -1,14 +1,13 @@
-import '../formatters/evaluation_labels.dart';
-
-import 'package:rd_app/app/router/app_routes.dart';
 import 'package:flutter/material.dart';
 
-import 'package:rd_app/features/evaluations/domain/entities/evaluation.dart';
-import 'package:rd_app/app/session_controller.dart';
-import 'package:rd_app/shared/widgets/page_body.dart';
-import 'package:rd_app/features/evaluations/presentation/widgets/patient_summary.dart';
+import '../../../../app/router/app_routes.dart';
+import '../../../../app/session_controller.dart';
+import '../../../../shared/widgets/page_body.dart';
+import '../../domain/entities/evaluation.dart';
+import '../formatters/evaluation_labels.dart';
+import '../widgets/patient_summary.dart';
 
-class ResultScreen extends StatelessWidget {
+class ResultScreen extends StatefulWidget {
   final Evaluation evaluacion;
   final SessionController sesion;
   final bool desdeHistorial;
@@ -19,20 +18,65 @@ class ResultScreen extends StatelessWidget {
     this.desdeHistorial = false,
   });
 
-  void _nueva(BuildContext context) {
-    AppRoutes.newEvaluation(context);
+  @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  Evaluation get evaluacion => widget.evaluacion;
+  SessionController get sesion => widget.sesion;
+  bool get desdeHistorial => widget.desdeHistorial;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final record = sesion.evaluations.byId(evaluacion.id) ?? evaluacion;
+      if (record.imagesStored && record.imagenes.isEmpty) {
+        sesion.evaluations.loadImages(record.id);
+      }
+    });
   }
 
   Future<void> _guardar(BuildContext context) async {
-    final controller = sesion.evaluations;
-    final ok = await controller.save(evaluacion);
+    final ok = await sesion.evaluations.save(evaluacion);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           ok
-              ? 'Evaluación añadida al historial.'
-              : controller.error ?? 'No se pudo guardar la evaluación',
+              ? 'Datos de evaluación añadidos al historial.'
+              : sesion.evaluations.error ?? 'No se pudo guardar la evaluación',
+        ),
+      ),
+    );
+  }
+
+  Widget _photo(
+    BuildContext context,
+    Evaluation record,
+    int i, {
+    double height = 135,
+  }) {
+    if (record.imagenes.length <= i) {
+      return SizedBox(
+        height: height,
+        child: const Center(
+          child: Icon(Icons.image_not_supported_outlined, size: 40),
+        ),
+      );
+    }
+    final bytes = record.imagenes[i].bytes;
+    return InkWell(
+      onTap: () => AppRoutes.image(context, bytes, 'Imagen ${i + 1}'),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          bytes,
+          height: height,
+          width: double.infinity,
+          fit: BoxFit.contain,
+          cacheWidth: 320,
         ),
       ),
     );
@@ -40,63 +84,53 @@ class ResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: sesion.evaluations,
+    listenable: sesion.changes,
     builder: (context, _) {
-      final guardada = sesion.evaluations.isSaved(evaluacion.id);
+      final record = sesion.evaluations.byId(evaluacion.id) ?? evaluacion;
+      final patient = sesion.patients.byId(record.patientId);
+      final saved = sesion.evaluations.isSaved(record.id);
+      final result = record.result;
       return Scaffold(
         appBar: AppBar(title: const Text('Resultado')),
         body: PageBody(
           children: [
-            const Text(
-              'Grado —',
+            Text(
+              result == null ? 'Grado —' : 'Grado ${result.gradoICDR}',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text('Pendiente de análisis', textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-
-            const SizedBox(height: 20),
-            PatientSummary(
-              paciente: sesion.patients.byId(evaluacion.patientId)!,
-              ojo: evaluacion.ojo,
-            ),
+            Text(record.statusLabel, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            if (sesion.isAdmin && saved)
+              OutlinedButton.icon(
+                onPressed: () => AppRoutes.adminEvaluation(context, record),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar evaluación'),
+              ),
+            if (patient != null)
+              PatientSummary(paciente: patient, ojo: record.ojo),
             const SizedBox(height: 20),
             Row(
               children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => AppRoutes.image(
-                      context,
-                      evaluacion.imagenes.first.bytes,
-                      'Imagen 1',
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.memory(
-                        evaluacion.imagenes.first.bytes,
-                        height: 135,
-                        fit: BoxFit.cover,
-                        cacheWidth: 320,
-                      ),
-                    ),
-                  ),
-                ),
+                Expanded(child: _photo(context, record, 0)),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Card(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         vertical: 28,
                         horizontal: 10,
                       ),
                       child: Column(
                         children: [
-                          Text('Confianza', textAlign: TextAlign.center),
-                          SizedBox(height: 10),
+                          const Text('Confianza'),
+                          const SizedBox(height: 10),
                           Text(
-                            '—',
-                            style: TextStyle(
+                            result?.confianza == null
+                                ? '—'
+                                : '${(result!.confianza! * 100).toStringAsFixed(0)}%',
+                            style: const TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
                             ),
@@ -109,6 +143,19 @@ class ResultScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
+            if (record.imagesStored && record.imagenes.isEmpty) ...[
+              if (sesion.evaluations.loadingImagesFor == record.id)
+                const LinearProgressIndicator(),
+              if (sesion.evaluations.imageError != null)
+                Text(sesion.evaluations.imageError!),
+              TextButton.icon(
+                onPressed: sesion.evaluations.loadingImagesFor != null
+                    ? null
+                    : () => sesion.evaluations.loadImages(record.id),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Recuperar imágenes'),
+              ),
+            ],
             const Text(
               'Las tres imágenes del ojo',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -116,29 +163,13 @@ class ResultScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                for (int i = 0; i < 3; i++)
+                for (var i = 0; i < 3; i++)
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Column(
                         children: [
-                          InkWell(
-                            onTap: () => AppRoutes.image(
-                              context,
-                              evaluacion.imagenes[i].bytes,
-                              'Imagen ${i + 1}',
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: Image.memory(
-                                evaluacion.imagenes[i].bytes,
-                                height: 76,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                cacheWidth: 180,
-                              ),
-                            ),
-                          ),
+                          _photo(context, record, i, height: 76),
                           const SizedBox(height: 6),
                           Text(
                             'Imagen ${i + 1}',
@@ -156,7 +187,13 @@ class ResultScreen extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 6),
-            const Text('Sin resultado disponible.'),
+            Text(
+              record.status == EvaluationStatus.draft
+                  ? 'Se conserva la información de la evaluación. Las fotografías aún no están almacenadas en la nube.'
+                  : result == null
+                  ? 'Sin resultado disponible.'
+                  : 'Versión del modelo: ${result.modelVersion}',
+            ),
             const SizedBox(height: 20),
             const Text(
               'Recomendación',
@@ -164,18 +201,18 @@ class ResultScreen extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             const Text('Sin recomendación disponible.'),
-            if (evaluacion.observaciones != null) ...[
+            if (record.observaciones != null) ...[
               const SizedBox(height: 20),
               const Text(
                 'Observaciones',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
-              Text(evaluacion.observaciones!),
+              Text(record.observaciones!),
             ],
             const SizedBox(height: 20),
             Text(
-              evaluacion.fechaLabel,
+              record.fechaLabel,
               style: const TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 24),
@@ -183,19 +220,21 @@ class ResultScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: FilledButton(
-                    onPressed: guardada || sesion.evaluations.busy
+                    onPressed: saved || sesion.evaluations.busy
                         ? null
                         : () => _guardar(context),
-                    child: Text(guardada ? 'Guardado' : 'Guardar'),
+                    child: Text(saved ? 'Guardado' : 'Guardar'),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _nueva(context),
-                    child: const Text('Nueva evaluación'),
+                ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => AppRoutes.newEvaluation(context),
+                      child: const Text('Nueva evaluación'),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 12),
