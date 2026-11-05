@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageOps
-from sklearn.metrics import accuracy_score, classification_report, cohen_kappa_score, confusion_matrix, f1_score
+from sklearn.metrics import accuracy_score, classification_report, cohen_kappa_score, confusion_matrix, f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 
 LABELS = list(range(5))
@@ -44,19 +44,45 @@ def prepare(args):
     # Retirar copias exactas ANTES de dividir. No detecta versiones recortadas o similares.
     duplicates = data[data.duplicated("sha256_pixels", keep="first")]
     data = data.drop_duplicates("sha256_pixels").reset_index(drop=True)
-    train, rest = train_test_split(data, test_size=0.30, stratify=data.diagnosis, random_state=42)
-    val, test = train_test_split(rest, test_size=0.50, stratify=rest.diagnosis, random_state=42)
+    train, rest = train_test_split(data, test_size=0.30, stratify=data.diagnosis, random_state=args.seed)
+    val, test = train_test_split(rest, test_size=0.50, stratify=rest.diagnosis, random_state=args.seed)
     output.mkdir(parents=True)
     duplicates.to_csv(output / "duplicados_exactos_retirados.csv", index=False)
     for name, frame in [("train", train), ("val", val), ("test", test)]:
         frame.to_csv(output / (name + ".csv"), index=False)
         print(name, len(frame), frame.diagnosis.value_counts().sort_index().to_dict())
-    save_json(output / "protocolo.json", {"seed": 42, "proportions": [0.70, 0.15, 0.15], "unit": "image", "exact_duplicates_removed": len(duplicates), "warning": "Sin IDs de pacientes: no garantiza independencia por paciente. No es validacion local de 20D. Revisar duplicados aproximados."})
+    save_json(output / "protocolo.json", {"seed": args.seed, "proportions": [0.70, 0.15, 0.15], "unit": "image", "exact_duplicates_removed": len(duplicates), "warning": "Sin IDs de pacientes: no garantiza independencia por paciente. No es validacion local de 20D. Revisar duplicados aproximados."})
 
 
 def metrics(y, pred):
     kappa = cohen_kappa_score(y, pred, labels=LABELS, weights="quadratic")
     return {"accuracy": float(accuracy_score(y, pred)), "macro_f1": float(f1_score(y, pred, labels=LABELS, average="macro", zero_division=0)), "qwk": float(kappa) if np.isfinite(kappa) else None, "report": classification_report(y, pred, labels=LABELS, output_dict=True, zero_division=0), "confusion_matrix": confusion_matrix(y, pred, labels=LABELS).tolist()}
+
+
+REFERABLE_GRADE = 2  # RD referible: grado >= 2 (moderada o peor).
+
+
+def referable_metrics(y, pred, probs=None):
+    """Sensibilidad, especificidad y AUC para RD referible (grado >= 2).
+
+    Sensibilidad/especificidad usan la clase predicha (sin umbral ajustado).
+    AUC usa la suma de probabilidades softmax de los grados >= 2 (puntuacion, no probabilidad calibrada).
+    Valores indefinidos (sin positivos o sin negativos) se devuelven como None.
+    """
+    y_true = np.asarray(y) >= REFERABLE_GRADE
+    y_pred = np.asarray(pred) >= REFERABLE_GRADE
+    tp = int(np.sum(y_true & y_pred))
+    fn = int(np.sum(y_true & ~y_pred))
+    tn = int(np.sum(~y_true & ~y_pred))
+    fp = int(np.sum(~y_true & y_pred))
+    result = {"threshold_grade": REFERABLE_GRADE, "tp": tp, "fn": fn, "tn": tn, "fp": fp,
+              "sensitivity": tp / (tp + fn) if tp + fn else None,
+              "specificity": tn / (tn + fp) if tn + fp else None,
+              "auc": None}
+    if probs is not None and 0 < y_true.sum() < len(y_true):
+        score = np.asarray(probs, dtype=float)[:, REFERABLE_GRADE:].sum(axis=1)
+        result["auc"] = float(roc_auc_score(y_true, score))
+    return result
 
 
 def transform(size, training=False):
@@ -128,6 +154,7 @@ def run_epoch(network, loader, device, criterion=None, optimizer=None, scaler=No
         predictions.extend(logits.argmax(1).detach().cpu().tolist())
         probabilities.extend(logits.float().softmax(1).detach().cpu().tolist())
     result = metrics(ys, predictions)
+    result["referable"] = referable_metrics(ys, predictions, probabilities)
     result["loss"] = total_loss / count if criterion is not None else None
     return result, ys, predictions, probabilities
 
@@ -137,9 +164,9 @@ def train(args):
     if args.epochs < 1 or args.batch_size < 1 or args.size < 32:
         raise ValueError("epochs y batch-size deben ser positivos; size >=32.")
     device = device_for(args)
-    random.seed(42)
-    np.random.seed(42)
-    torch.manual_seed(42)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     if args.run.exists():
@@ -153,7 +180,7 @@ def train(args):
         source = args.splits / (name + ".csv")
         (args.run / source.name).write_bytes(source.read_bytes())
     from torch.utils.data import DataLoader
-    generator = torch.Generator().manual_seed(42)
+    generator = torch.Generator().manual_seed(args.seed)
     # workers=0 facilita el primer entrenamiento en Windows.
     train_loader = DataLoader(Images(tr, args.size, True), batch_size=args.batch_size, shuffle=True, num_workers=0, generator=generator)
     val_loader = DataLoader(Images(va, args.size), batch_size=args.batch_size, num_workers=0)
@@ -163,7 +190,7 @@ def train(args):
     criterion = torch.nn.CrossEntropyLoss(weight=weights)
     scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
     config = {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()}
-    config.update({"torch": torch.__version__, "device": str(device), "seed": 42, "pretrained": not args.smoke, "unit": "image", "class_weights": weights.cpu().tolist()})
+    config.update({"torch": torch.__version__, "device": str(device), "seed": args.seed, "pretrained": not args.smoke, "unit": "image", "class_weights": weights.cpu().tolist()})
     save_json(args.run / "config.json", config)
     best, stale, history, optimizer = -float("inf"), 0, [], None
     for epoch in range(args.epochs):
@@ -235,6 +262,7 @@ def main():
     parser.add_argument("--data", type=Path, default=Path("data/aptos"))
     parser.add_argument("--splits", type=Path, default=Path("splits/aptos_seed42"))
     parser.add_argument("--run", type=Path, default=Path("runs/b0_320_seed42"))
+    parser.add_argument("--seed", type=int, default=42, help="Semilla de particiones (prepare) y de entrenamiento (train). Las particiones deben ser las mismas para comparar modelos.")
     parser.add_argument("--size", type=int, default=320)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--epochs", type=int, default=20)
