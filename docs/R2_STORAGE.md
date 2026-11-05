@@ -7,11 +7,13 @@ Decisión del usuario, 5 de noviembre de 2026: guardar los archivos en **Cloudfl
 - Preparado: servicio FastAPI, adaptador R2, validación de archivos, autorización con Supabase, subida de tres fotos, enlaces de lectura y recuperación desde Flutter.
 - Preparada: cuarta migración SQL `20261105130000_r2_image_storage.sql`, con proveedor y RPC exclusiva de servidor para confirmar las tres imágenes.
 - Preparado: Dockerfile y guía de despliegue en Render.
-- Pendiente: habilitar R2, crear el bucket y sus credenciales, configurar el servicio Render, aplicar la migración en Supabase y publicar la API.
+- Verificado: bucket `retinazo-retinas` accesible con credenciales S3 guardadas en `backend/.env`, excluido de Git y con permisos locales 600. Carga y descarga firmada de tres PNG sintéticos con integridad comprobada; los tres objetos de prueba fueron eliminados.
+- Publicado: backend y migraciones en la rama `feat/supabase-schema` del repositorio compartido.
+- Pendiente: acceso administrativo a Render y Supabase para configurar el servicio, aplicar la migración y publicar la API.
 - Pendiente: activar `IMAGE_API_URL` y compilar el APK conectado; prueba de extremo a extremo contra R2/Render y en teléfono físico.
 - Pendiente, separado de esta etapa: SMTP externo, Google OAuth y servicio de análisis/modelo.
 
-No se ha creado infraestructura, contratado una instancia, obtenido claves privadas ni aplicado la nueva migración en la nube. El APK anterior sigue conservando únicamente metadatos remotos; este trabajo no convierte las fotos anteriores en archivos persistidos.
+El usuario habilitó R2 y proporcionó las credenciales del bucket. No se ha contratado una instancia de Render ni aplicado la nueva migración en la nube. El APK anterior sigue conservando únicamente metadatos remotos; este trabajo no convierte las fotos anteriores en archivos persistidos.
 
 ## Recorrido
 
@@ -55,4 +57,4 @@ La guía detallada, las variables y el contrato están en [backend/README.md](..
 
 ## Verificación de la preparación
 
-Pasaron 15 pruebas del backend, 45 de PostgreSQL temporal y 30 de Flutter. El contenedor Docker se construyó y se comprobó su importación en Python 3.12 sin red. Se probaron autenticación, separación de credenciales, validación de archivos, fallos parciales, reintentos, referencias de objetos, confirmación exclusiva de servidor y descarte de descargas alteradas. No se enviaron archivos a R2 ni se publicó una API en Render.
+Pasaron 15 pruebas del backend, 45 de PostgreSQL temporal y 30 de Flutter. El contenedor Docker se construyó y se comprobó su importación en Python 3.12 sin red. Se probaron autenticación, separación de credenciales, validación de archivos, fallos parciales, reintentos, referencias de objetos, confirmación exclusiva de servidor y descarte de descargas alteradas. Las 15 pruebas del backend y las 45 de base de datos volvieron a pasar antes de publicar el código. La conexión real a R2 se verificó con tres PNG sintéticos: escritura, descarga mediante enlaces de 60 segundos e igualdad de bytes. Se eliminaron todos los objetos de prueba. Esto no verifica todavía el recorrido completo Flutter–FastAPI–Supabase–R2; la API de Render sigue pendiente.
