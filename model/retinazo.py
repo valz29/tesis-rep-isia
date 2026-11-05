@@ -39,8 +39,13 @@ def prepare(args):
             digest = hashlib.sha256(str(image.size).encode() + image.tobytes()).hexdigest()
         records.append({"id_code": row.id_code, "path": str(path), "diagnosis": int(row.diagnosis), "sha256_pixels": digest})
     data = pd.DataFrame(records)
-    if (data.groupby("sha256_pixels").diagnosis.nunique() > 1).any():
-        raise ValueError("Hay imagenes identicas con etiquetas distintas. Revisalas antes de dividir.")
+    conflicting = data.groupby("sha256_pixels").diagnosis.transform("nunique") > 1
+    conflicts = data[conflicting]
+    if conflicting.any():
+        if not args.drop_conflicts:
+            raise ValueError("Hay imagenes identicas con etiquetas distintas. Revisalas o usa --drop-conflicts para excluir todos los miembros de esos grupos.")
+        # Se excluyen TODAS las imagenes del grupo: no se elige una etiqueta ni se usa el modelo para decidir.
+        data = data[~conflicting].reset_index(drop=True)
     # Retirar copias exactas ANTES de dividir. No detecta versiones recortadas o similares.
     duplicates = data[data.duplicated("sha256_pixels", keep="first")]
     data = data.drop_duplicates("sha256_pixels").reset_index(drop=True)
@@ -48,10 +53,11 @@ def prepare(args):
     val, test = train_test_split(rest, test_size=0.50, stratify=rest.diagnosis, random_state=args.seed)
     output.mkdir(parents=True)
     duplicates.to_csv(output / "duplicados_exactos_retirados.csv", index=False)
+    conflicts.to_csv(output / "conflictos_etiqueta_excluidos.csv", index=False)
     for name, frame in [("train", train), ("val", val), ("test", test)]:
         frame.to_csv(output / (name + ".csv"), index=False)
         print(name, len(frame), frame.diagnosis.value_counts().sort_index().to_dict())
-    save_json(output / "protocolo.json", {"seed": args.seed, "proportions": [0.70, 0.15, 0.15], "unit": "image", "exact_duplicates_removed": len(duplicates), "warning": "Sin IDs de pacientes: no garantiza independencia por paciente. No es validacion local de 20D. Revisar duplicados aproximados."})
+    save_json(output / "protocolo.json", {"seed": args.seed, "proportions": [0.70, 0.15, 0.15], "unit": "image", "exact_duplicates_removed": len(duplicates), "label_conflict_images_excluded": len(conflicts), "warning": "Sin IDs de pacientes: no garantiza independencia por paciente. No es validacion local de 20D. Revisar duplicados aproximados."})
 
 
 def metrics(y, pred):
@@ -270,6 +276,7 @@ def main():
     parser.add_argument("--patience", type=int, default=5)
     parser.add_argument("--partition", choices=["val", "test"], default="val")
     parser.add_argument("--image", type=Path)
+    parser.add_argument("--drop-conflicts", action="store_true", help="prepare: excluir imagenes identicas con etiquetas contradictorias (se registran en conflictos_etiqueta_excluidos.csv).")
     parser.add_argument("--allow-cpu", action="store_true")
     parser.add_argument("--smoke", action="store_true", help="Dos lotes por fase; pesos aleatorios, solo prueba tecnica.")
     args = parser.parse_args()

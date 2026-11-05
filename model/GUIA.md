@@ -59,10 +59,10 @@ Comprueba que el CSV contiene columnas `id_code` y `diagnosis`. Grados: 0 sin RD
 ## 4. Revisar y separar los datos una sola vez
 
 ```powershell
-.\.venv\Scripts\python.exe retinazo.py prepare
+.\.venv\Scripts\python.exe retinazo.py prepare --drop-conflicts
 ```
 
-El script abre todas las imagenes, detecta archivos ausentes o ilegibles, comprueba etiquetas, identifica imagenes con pixeles RGB identicos y retira copias exactas. Si una imagen identica tiene etiquetas contradictorias, se detiene para revision. Genera `splits/aptos_seed42/train.csv`, `val.csv`, `test.csv`, un registro de duplicados retirados y un protocolo.
+APTOS contiene imagenes identicas con etiquetas distintas (30 grupos, unas 65 imagenes). Sin `--drop-conflicts` el script se detiene. Con la opcion se excluyen todas las imagenes de esos grupos y se registran en `conflictos_etiqueta_excluidos.csv`; no se elige ninguna etiqueta. El script abre todas las imagenes, detecta archivos ausentes o ilegibles, comprueba etiquetas, identifica imagenes con pixeles RGB identicos y retira copias exactas. Si una imagen identica tiene etiquetas contradictorias, se detiene para revision. Genera `splits/aptos_seed42/train.csv`, `val.csv`, `test.csv`, un registro de duplicados retirados y un protocolo.
 
 Divide aproximadamente 70% entrenamiento, 15% validacion y 15% prueba, con estratificacion por grado y semilla 42. No copies manualmente archivos entre particiones. Conserva esos CSV para comparar todos los modelos.
 
