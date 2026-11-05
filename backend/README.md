@@ -1,6 +1,8 @@
 # Retinazo · servicio de imágenes
 
-**Preparado, no desplegado.** Supabase mantiene Auth y PostgreSQL; Cloudflare R2 será el almacenamiento privado. El modelo todavía no se ejecuta. Este servicio FastAPI se desplegará en Render para que el APK no dependa de la computadora de desarrollo.
+**Desplegado el 5 de noviembre de 2026.** Supabase mantiene Auth y PostgreSQL; Cloudflare R2 guarda las imágenes. FastAPI funciona en Render Free en `https://retinazo-images.onrender.com`, región Virginia, sin depender de la computadora de desarrollo. El modelo todavía no se ejecuta.
+
+Se comprobó el recorrido remoto con cuentas, pacientes y PNG sintéticos: carga de tres archivos, reintento idempotente, persistencia, descarga firmada con igualdad de bytes y autorización de profesional/administrador. Todos los registros, cuentas y objetos sintéticos se eliminaron. El teléfono físico y la calidad clínica de las imágenes requieren validación aparte.
 
 ## Estructura
 
@@ -54,18 +56,30 @@ Blueprint. Selecciona la rama que contenga esta preparación. Define explícitam
 la instancia Free para la primera prueba y solicita las credenciales en Render
 (`sync: false`); no contiene secretos. Los despliegues automáticos están
 desactivados para revisar cada publicación. Crear el archivo no crea un servicio
-ni aplica la migración SQL: ambos pasos y la validación remota siguen pendientes.
+ni aplica la migración SQL. La instancia actual se creó mediante la API de Render;
+la migración y la comprobación remota ya se completaron.
 
 1. Tener el código revisado en un repositorio al que Render pueda acceder.
 2. Crear un **Web Service** con runtime Docker y directorio raíz `backend`. Su Dockerfile instala las versiones de `requirements.lock`.
 3. Elegir la instancia. Free se suspende tras 15 minutos sin tráfico y puede tardar aproximadamente un minuto en reactivarse. Para permanecer activo sin suspensión por inactividad se necesita una instancia de pago. El plan y costo se eligen antes de contratar.
 4. Añadir los secretos anteriores en Render. Mantener el bucket privado, con dominio público y `r2.dev` desactivados.
-5. Aplicar previamente `supabase/migrations/20261105130000_r2_image_storage.sql` en Supabase, después de las migraciones anteriores. Esta migración todavía no se ha aplicado al proyecto alojado.
+5. Aplicar previamente `supabase/migrations/20261105130000_r2_image_storage.sql` en Supabase, después de las migraciones anteriores. Ya está aplicada al proyecto Retinazo alojado; no repetirla allí.
 6. Configurar `/health` como ruta de comprobación. El comando del contenedor escucha en `0.0.0.0:$PORT`, que Render asigna, con un worker. Render publica la URL HTTPS.
 7. Comprobar las rutas autenticadas con imágenes sintéticas y permisos de profesional/administrador. La prueba local no certifica las credenciales ni las políticas reales de R2.
 8. Añadir el origen HTTPS publicado a `IMAGE_API_URL` en la configuración pública local de Flutter y recompilar el APK.
 
 El servicio no necesita disco persistente: los archivos temporales se cierran tras cada petición, los originales quedan en R2 y los registros en PostgreSQL. Hay que medir la memoria con las imágenes reales para elegir la instancia. La futura inferencia puede requerir otro tamaño de instancia o un servicio con GPU; no se asume que la instancia de imágenes pueda ejecutar el modelo.
+
+Para repetir voluntariamente la comprobación remota desde la raíz del repositorio:
+
+```sh
+backend/.venv/bin/python scripts/smoke_remote_images.py --run
+```
+
+Necesita el archivo protegido `backend/.env`, incluido `SUPABASE_ACCESS_TOKEN` para
+limpiar exclusivamente los registros temporales de la prueba. Este token y
+`RENDER_API_KEY` son credenciales de administración locales y no se incluyen en
+las variables del servicio desplegado ni en Flutter.
 
 Render Free también tiene límites de tráfico, incluidas transferencias hacia almacenamiento externo. R2 sin cobro de egreso no implica que todo el alojamiento de la API sea gratuito.
 

@@ -4,6 +4,7 @@ services:
     name: retinazo-images
     runtime: docker
     plan: free
+    region: virginia
     rootDir: backend
     dockerfilePath: ./Dockerfile
     dockerContext: .
