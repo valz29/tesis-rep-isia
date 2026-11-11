@@ -89,6 +89,39 @@ class SupabaseAdminRepository implements AdminRepository {
         );
       });
   @override
+  Future<void> setPatientActive(String patientId, bool active, String reason) =>
+      _guard(() async {
+        await client.rpc(
+          'admin_set_patient_active',
+          params: {
+            'patient_id_input': patientId,
+            'active_input': active,
+            'reason_input': reason,
+          },
+        );
+      });
+  @override
+  Future<List<AdminAccount>> eligibleOwners(String query) => _guard(() async {
+    final rows = await client.rpc(
+      'admin_eligible_professionals',
+      params: {'query_input': query},
+    ) as List;
+    return rows
+        .map(
+          (r) => AdminAccount(
+            id: r['id'],
+            name: r['full_name'] ?? 'Sin nombre',
+            email: r['email'] ?? '',
+            role: AccountRole.professional,
+            active: r['is_active'],
+            confirmed: r['email_confirmed_at'] != null,
+            createdAt: DateTime.parse(r['created_at']).toLocal(),
+            patientCount: (r['patient_count'] as num).toInt(),
+          ),
+        )
+        .toList();
+  });
+  @override
   Future<void> updateEvaluation(
     String id,
     OjoEvaluado eye,

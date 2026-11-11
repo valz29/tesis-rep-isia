@@ -220,6 +220,10 @@ class SchemaTests(unittest.TestCase):
         self.check_sql(as_user(ADMIN) + """
             INSERT INTO public.patients(dni, first_names, last_names, birth_date, sex)
                 VALUES ('98765432', 'Admin', 'Patient', '1980-01-01', 'female');
+        """, '23514')
+        self.check_sql(as_user(ADMIN) + f"""
+            INSERT INTO public.patients(owner_id,dni,first_names,last_names,birth_date,sex)
+                VALUES ('{U1}','98765432','Assigned','Professional','1980-01-01','female');
         """)
         self.check_sql(as_user(ADMIN) + f"""
             UPDATE public.patients SET first_names = 'Admin edit' WHERE id = '{P1}';
@@ -231,8 +235,14 @@ class SchemaTests(unittest.TestCase):
         self.check_sql(as_user() + f"UPDATE public.profiles SET role = 'admin' WHERE id = '{U1}';", "42501")
         self.check_sql(f"SELECT public.test_assert((SELECT role = 'professional' FROM public.profiles WHERE id = '{U3}'));")
 
-    def test_admin_can_promote_a_verified_clinical_author(self):
-        self.check_sql(as_user(ADMIN) + f"SELECT public.admin_update_user('{U1}','First admin','admin',true);")
+    def test_admin_must_reassign_patients_before_promoting_a_professional(self):
+        self.check_sql(as_user(ADMIN) + f"SELECT public.admin_update_user('{U1}','First admin','admin',true);", '23514')
+        self.check_sql(as_user(ADMIN) + f"""
+            UPDATE public.patients SET dni='87654321' WHERE id='{P1}';
+            SELECT public.admin_reassign_patient('{P1}','{U2}');
+            SELECT public.admin_update_user('{U1}','First admin','admin',true);
+            SELECT public.test_assert((SELECT professional_id='{U1}' FROM public.evaluations WHERE id='{E1}'));
+        """)
 
     def test_admin_users_and_summary_expose_only_safe_fields(self):
         self.check_sql(as_user(ADMIN) + """
@@ -335,9 +345,53 @@ class SchemaTests(unittest.TestCase):
             objects=f"jsonb_set({self.r2_objects()},'{{0,{field}}}',{value})"
             self.check_sql(self.pending_r2_metadata()+f"SET LOCAL ROLE service_role;SELECT public.finish_r2_upload('{U1}','{E1}',{objects});",'23514')
 
-    def test_admin_can_finalize_other_owners_images(self):
+    def test_admin_cannot_finalize_clinical_images(self):
         self.check_sql(self.pending_r2_metadata()+f"SET LOCAL ROLE service_role;SELECT public.finish_r2_upload('{ADMIN}','{E1}',{self.r2_objects()});RESET ROLE;"+
-            f"SELECT public.test_assert((SELECT count(*)=1 FROM public.admin_audit_log WHERE action='images.upload' AND actor_id='{ADMIN}'));")
+            f"SELECT public.test_assert((SELECT count(*)=1 FROM public.admin_audit_log WHERE action='images.upload' AND actor_id='{ADMIN}'));", '42501')
+
+    def test_admin_is_never_an_eligible_patient_owner(self):
+        self.check_sql(as_user(ADMIN) + f"SELECT public.admin_reassign_patient('{P1}','{ADMIN}');", '23514')
+        self.check_sql(as_user(ADMIN) + """
+            SELECT public.test_assert((SELECT count(*)=2 FROM public.admin_eligible_professionals()));
+            SELECT public.test_assert((SELECT count(*)=0 FROM public.admin_eligible_professionals() WHERE role<>'professional'));
+        """)
+        self.check_sql(as_user() + "SELECT * FROM public.admin_eligible_professionals();", '42501')
+
+    def test_professional_cannot_assign_other_professionals_or_archive(self):
+        self.check_sql(as_user() + f"""
+            INSERT INTO public.patients(owner_id,dni,first_names,last_names,birth_date,sex)
+                VALUES ('{U2}','98765432','Denied','Patient','1980-01-01','female');
+        """, '42501')
+        self.check_sql(as_user() + f"SELECT public.admin_set_patient_active('{P1}',false,'Denied');", '42501')
+        self.check_sql(as_user() + f"UPDATE public.patients SET is_active=false WHERE id='{P1}';", '42501')
+
+    def test_deactivation_keeps_history_and_blocks_new_evaluations(self):
+        archive=as_user(ADMIN)+f"SELECT public.admin_set_patient_active('{P1}',false,'Patient archived'); RESET ROLE;"
+        self.check_sql(three_images()+complete_result()+archive+as_user()+f"""
+            SELECT public.test_assert((SELECT NOT is_active FROM public.patients WHERE id='{P1}'));
+            SELECT public.test_assert((SELECT count(*)=1 FROM public.evaluations WHERE id='{E1}'));
+            SELECT public.test_assert((SELECT count(*)=3 FROM public.evaluation_images WHERE evaluation_id='{E1}'));
+            UPDATE public.patients SET first_names='Denied' WHERE id='{P1}';
+            SELECT public.test_assert((SELECT first_names='First' FROM public.patients WHERE id='{P1}'));
+        """)
+        self.check_sql(archive+as_user()+f"INSERT INTO public.evaluations(patient_id,eye) VALUES('{P1}','left');", '23514')
+        self.check_sql(self.pending_r2_metadata()+archive+f"SET LOCAL ROLE service_role;SELECT public.finish_r2_upload('{U1}','{E1}',{self.r2_objects()});", '23514')
+
+    def test_reactivation_and_reason_are_guarded(self):
+        self.check_sql(as_user(ADMIN)+f"SELECT public.admin_set_patient_active('{P1}',false,'');", '23514')
+        self.check_sql(as_user(ADMIN)+f"""
+            SELECT public.admin_set_patient_active('{P1}',false,'Archived');
+            SELECT public.admin_set_patient_active('{P1}',true,NULL);
+            SELECT public.test_assert((SELECT is_active AND deactivated_at IS NULL FROM public.patients WHERE id='{P1}'));
+        """)
+        self.check_sql(as_user(ADMIN)+f"""
+            SELECT public.admin_set_patient_active('{P1}',false,'Archived');
+            SELECT public.admin_update_user('{U1}','Disabled','professional',false);
+            SELECT public.admin_set_patient_active('{P1}',true,NULL);
+        """, '23514')
+
+    def test_admin_cannot_author_new_evaluations(self):
+        self.check_sql(as_user(ADMIN)+f"INSERT INTO public.evaluations(patient_id,eye) VALUES('{P1}','left');", '23514')
 
     def test_draft_rpc_is_atomic_and_idempotent(self):
         new_id = '30000000-0000-0000-0000-000000000099'

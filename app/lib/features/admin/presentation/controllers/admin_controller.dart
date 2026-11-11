@@ -90,15 +90,16 @@ class AdminController extends ChangeNotifier {
       _perform(() => _repository.deleteEmptyUser(id));
   Future<bool> reassign(String patientId, String ownerId) =>
       _perform(() => _repository.reassignPatient(patientId, ownerId));
+  Future<bool> setPatientActive(String patientId, bool active, String reason) =>
+      _perform(() => _repository.setPatientActive(patientId, active, reason));
   Future<bool> updateEvaluation(
     String id,
     OjoEvaluado eye,
     String observations,
   ) => _perform(() => _repository.updateEvaluation(id, eye, observations));
   Future<List<AdminAuditEntry>> audit(int offset) => _repository.audit(offset);
-  Future<List<AdminAccount>> eligibleOwners(String query) => _repository
-      .users(query, 0)
-      .then((rows) => rows.where((a) => a.active && a.confirmed).toList());
+  Future<List<AdminAccount>> eligibleOwners(String query) =>
+      _repository.eligibleOwners(query);
   void clear() {
     _epoch++;
     accounts = const [];

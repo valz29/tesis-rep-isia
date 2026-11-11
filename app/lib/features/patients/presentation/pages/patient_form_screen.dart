@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../admin/domain/entities/admin_account.dart';
+import '../../../admin/presentation/widgets/professional_picker.dart';
+
 import 'package:rd_app/features/patients/domain/entities/patient.dart';
 import 'package:rd_app/app/session_controller.dart';
 import 'package:rd_app/core/theme/app_theme.dart';
@@ -25,6 +28,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final _historia = TextEditingController();
   DateTime? _nacimiento;
   Sexo? _sexo;
+  AdminAccount? _owner;
 
   @override
   void initState() {
@@ -86,6 +90,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     final controller = widget.sesion.patients;
     final p = await controller.register(
       existing: widget.existing,
+      ownerId:
+          _owner?.id ??
+          (widget.sesion.isAdmin ? null : widget.sesion.auth.personal?.id),
       dni: _dni.text,
       nombres: _nombres.text.trim(),
       apellidos: _apellidos.text.trim(),
@@ -122,6 +129,45 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             key: _form,
             child: Column(
               children: [
+                if (widget.sesion.isAdmin && widget.existing == null) ...[
+                  FormField<AdminAccount>(
+                    key: const Key('patient-owner'),
+                    validator: (_) => _owner == null
+                        ? 'Selecciona un profesional responsable'
+                        : null,
+                    builder: (state) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.assignment_ind_outlined),
+                          title: const Text('Profesional responsable'),
+                          subtitle: Text(
+                            _owner?.name ?? 'Seleccionar profesional',
+                          ),
+                          trailing: const Icon(Icons.expand_more),
+                          onTap: () async {
+                            final owner = await chooseProfessional(
+                              context,
+                              widget.sesion.admin,
+                            );
+                            if (!mounted || owner == null) return;
+                            setState(() => _owner = owner);
+                            state.didChange(owner);
+                          },
+                        ),
+                        if (state.hasError)
+                          Text(
+                            state.errorText!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextFormField(
                   key: const Key('patient-name'),
                   controller: _nombres,

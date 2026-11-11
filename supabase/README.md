@@ -1,8 +1,8 @@
 # Base relacional de Retinazo
 
-Estado al 5 de noviembre de 2026: cuatro migraciones aplicadas en el proyecto Retinazo (`rxlceiknbabusicneykd`). Las primeras tres se aplicaron por SQL Editor; la cuarta por Management API. Ocho tablas con RLS, RPC de borradores, administración y confirmación de imágenes R2 comprobadas. Cuenta administradora inicial creada, verificada y probada mediante Auth y Data API con clave pública. Flutter integrado con el servicio de imágenes en Render. SMTP externo, Google OAuth y modelo pendientes.
+Estado al 11 de noviembre de 2026: cinco migraciones aplicadas en el proyecto Retinazo (`rxlceiknbabusicneykd`). Las primeras tres se aplicaron por SQL Editor; la cuarta y quinta por Management API. Ocho tablas con RLS, RPC de borradores, administración y confirmación de imágenes R2 comprobadas. Cuenta administradora inicial creada, verificada y probada mediante Auth y Data API con clave pública. Flutter integrado con el servicio de imágenes en Render. SMTP externo, Google OAuth y modelo pendientes.
 
-No volver a ejecutar las migraciones iniciales en este proyecto: los cambios futuros requieren nuevas migraciones. No está vinculado al CLI. El historial remoto contiene la migración aplicada por API, pero no las primeras tres aplicadas manualmente; antes de migrar a CLI habrá que reconciliar ese historial.
+No volver a ejecutar las migraciones iniciales en este proyecto: los cambios futuros requieren nuevas migraciones. No está vinculado al CLI. El historial remoto contiene las migraciones aplicadas por API, pero no las primeras tres aplicadas manualmente; antes de migrar a CLI habrá que reconciliar ese historial.
 
 - Migración: `migrations/20261102130000_initial_schema.sql`.
 - Diseño, diccionario, relaciones y normalización: [`../docs/DATABASE.md`](../docs/DATABASE.md).
@@ -14,7 +14,7 @@ La migración utiliza las tablas/funciones de Auth y los roles de PostgreSQL que
 
 1. Crear o abrir un proyecto nuevo vacío.
 2. Revisar el SQL completo, en especial las reglas de acceso y unicidad de DNI por profesional.
-3. Ejecutar en orden los cuatro archivos de `migrations/` (esquema inicial, guardado de borradores, administración y R2) desde el SQL Editor dentro de una única transacción (`BEGIN;` antes y `COMMIT;` después). Conservar los archivos como historial. No ejecutar la misma creación dos veces: una modificación posterior debe ser otra migración.
+3. Ejecutar en orden los cinco archivos de `migrations/` (esquema inicial, guardado de borradores, administración, R2 y ciclo de vida de pacientes) desde el SQL Editor dentro de una única transacción (`BEGIN;` antes y `COMMIT;` después). Conservar los archivos como historial. No ejecutar la misma creación dos veces: una modificación posterior debe ser otra migración.
 4. Alternativamente, gestionar desde el inicio con Supabase CLI: inicializar la configuración, vincular el proyecto y aplicar las migraciones con `supabase db push`. Elegir un método de gestión para mantener el historial coherente; no aplicar por SQL Editor y después ejecutar a ciegas la misma migración por CLI.
 5. Configurar el método de autenticación y su correo/retorno móvil en una etapa separada. Un usuario creado sin confirmar su correo ya puede tener un perfil, pero las políticas no le permiten acceder a los datos de la app.
 6. Verificar el esquema y las políticas en el proyecto real antes de conectar Flutter. Las pruebas locales no sustituyen esa comprobación ni prueban entrega de correos u OAuth.
@@ -57,3 +57,7 @@ Referencia: [SMTP de Supabase](https://supabase.com/docs/guides/auth/auth-smtp).
 ## Cuarta migración aplicada: Cloudflare R2
 
 `20261105130000_r2_image_storage.sql` se aplicó por Management API el 5 de noviembre de 2026, después de comprobar que no existían referencias previas a archivos. Añade `storage_provider` y la RPC `finish_r2_upload`, ejecutable exclusivamente por el servidor. Se verificaron los permisos reales y el recorrido autenticado de carga/lectura mediante Render y R2 con cuentas y datos sintéticos; al finalizar no quedaron registros temporales. Ver [R2_STORAGE.md](../docs/R2_STORAGE.md).
+
+## Quinta migración: responsabilidad profesional y pacientes desactivados
+
+`20261111180000_patient_lifecycle.sql` está aplicada. Restringe responsables a profesionales activos confirmados, impide nuevas evaluaciones de administradores y añade desactivación/reactivación auditada de pacientes sin borrar historial o archivos. Los registros anteriores se conservan hasta decidir su archivo, reasignación o limpieza explícita. La desactivación de un paciente heredado a cargo de un administrador retira esa asignación y exige reasignar antes de reactivar. Las nuevas asignaciones a administradores se rechazan en SQL.

@@ -60,3 +60,7 @@ La guía detallada, las variables y el contrato están en [backend/README.md](..
 Pasaron 15 pruebas del backend, 45 de PostgreSQL temporal y 30 de Flutter, sin incidencias de análisis estático. El contenedor Docker se construyó y se comprobó su importación en Python 3.12 sin red. Se probaron autenticación, separación de credenciales, validación de archivos, fallos parciales, reintentos, referencias de objetos, confirmación exclusiva de servidor y descarte de descargas alteradas.
 
 La conexión real completa se comprobó con `backend/.venv/bin/python scripts/smoke_remote_images.py --run`. La evaluación persistió con tres imágenes cargadas, estado `pending_analysis` y sin resultado de modelo. La prueba crea datos sintéticos y los elimina al terminar. El script requiere la configuración local protegida y nunca imprime credenciales, sesiones o enlaces firmados. La API devuelve HTTP 200 en `/health`; esta ruta por sí sola no certifica almacenamiento o autorización, por eso se ejecutó también la prueba autenticada.
+
+## Ciclo de vida y roles (1.3.0)
+
+La quinta migración y la API restringen la carga a profesionales responsables de pacientes activos. Los administradores consultan imágenes, pero no realizan cargas clínicas. Desactivar un paciente conserva sus referencias y objetos; bloquea nuevas cargas incluso con una sesión anterior. La RPC final revalida actividad para resolver cambios de permisos durante una transferencia.

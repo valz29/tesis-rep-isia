@@ -20,6 +20,7 @@ class PatientSelectionScreen extends StatefulWidget {
 
 class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
   String _query = '';
+  bool _inactive = false;
   final _search = TextEditingController();
   @override
   void dispose() {
@@ -48,7 +49,10 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.sesion.patients,
     builder: (context, _) {
-      final patients = widget.sesion.patients.search(_query);
+      final patients = widget.sesion.patients.search(
+        _query,
+        inactive: _inactive,
+      );
       return Scaffold(
         appBar: AppBar(
           title: Text(
@@ -69,6 +73,18 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
         ),
         body: PageBody(
           children: [
+            if (widget.sesion.isAdmin && !widget.paraEvaluar) ...[
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Activos')),
+                  ButtonSegment(value: true, label: Text('Desactivados')),
+                ],
+                selected: {_inactive},
+                onSelectionChanged: (value) =>
+                    setState(() => _inactive = value.single),
+              ),
+              const SizedBox(height: 16),
+            ],
             TextField(
               controller: _search,
               focusNode: _focus,
@@ -134,7 +150,9 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
                     const SizedBox(height: 16),
                     Text(
                       _query.isEmpty
-                          ? 'Todavía no hay pacientes'
+                          ? (_inactive
+                                ? 'No hay pacientes desactivados'
+                                : 'Todavía no hay pacientes')
                           : 'Sin coincidencias',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),

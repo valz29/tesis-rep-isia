@@ -49,9 +49,12 @@ class SessionController extends ChangeNotifier {
   bool get isAdmin => auth.personal?.isAdmin ?? false;
   bool canEdit(Patient patient) =>
       auth.personal != null &&
-      (isAdmin ||
-          patient.ownerId == null ||
-          patient.ownerId == auth.personal?.id);
+      (isAdmin || (patient.isActive && patient.ownerId == auth.personal?.id));
+  bool canEvaluate(Patient patient) =>
+      !isAdmin &&
+      patient.isActive &&
+      auth.personal != null &&
+      patient.ownerId == auth.personal?.id;
   Listenable get changes => Listenable.merge([patients, evaluations]);
   CaptureController createCaptureController() =>
       CaptureController(_selectImage);

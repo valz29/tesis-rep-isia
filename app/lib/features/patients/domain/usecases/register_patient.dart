@@ -9,9 +9,14 @@ class RegisterPatient {
   const RegisterPatient(this._repository, this._now);
   Future<void> call(Patient patient) async {
     validatePatient(patient, _now());
-    if (await _repository.findByDni(patient.dni, ownerId: patient.ownerId) !=
-        null) {
-      throw const AppFailure('Este DNI ya está registrado');
+    final existing = await _repository.findByDni(
+      patient.dni,
+      ownerId: patient.ownerId,
+    );
+    if (existing != null) {
+      throw AppFailure(
+        existing.isActive ? 'Este DNI ya está registrado' : 'El DNI ya tiene un expediente desactivado; requiere reactivación',
+      );
     }
     await _repository.save(patient);
   }

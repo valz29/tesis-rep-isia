@@ -14,7 +14,11 @@ class EvaluationImages:
 
     def upload(self, actor: Actor, evaluation_id: str,
                contents: list[bytes]) -> None:
+        if actor.role != "professional":
+            raise StorageFailure(403, "Solo el profesional responsable puede cargar imágenes")
         record = self.gateway.evaluation(actor, evaluation_id)
+        if not record.patient_active:
+            raise StorageFailure(409, "El paciente está desactivado; se conserva su historial")
         expected = sorted(record.images, key=lambda i: i.position)
         if record.status != "draft":
             # Already finalized requests are idempotent only when every byte matches.

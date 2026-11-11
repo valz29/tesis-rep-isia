@@ -85,6 +85,12 @@ Render Free también tiene límites de tráfico, incluidas transferencias hacia 
 
 ## Contrato HTTP
 
+Actualización 1.3.0: solo el profesional responsable puede cargar imágenes de un
+paciente activo. La API verifica su rol y actividad antes de escribir en R2; la
+RPC vuelve a comprobarlo antes de confirmar la carga. El administrador conserva
+la consulta global, pero no carga imágenes ni crea nuevas evaluaciones. Los
+pacientes desactivados conservan la lectura autorizada de sus imágenes e historial.
+
 Todas las rutas de evaluación requieren `Authorization: Bearer <sesión Supabase>`. No reciben contraseñas, claves de R2, claves de servidor ni roles elegidos por el cliente.
 
 - `GET /health`: identifica el servicio; `model=not_integrated`.

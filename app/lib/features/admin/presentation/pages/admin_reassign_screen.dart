@@ -90,7 +90,7 @@ class _AdminReassignScreenState extends State<AdminReassignScreen> {
       body: PageBody(
         children: [
           const Text(
-            'Elige una cuenta activa con correo confirmado. Busca por nombre o correo si no aparece en los primeros 50 resultados.',
+            'Elige un profesional activo con correo confirmado. Los administradores no pueden tener pacientes asignados. Busca por nombre o correo si no aparece en los primeros 50 resultados.',
           ),
           TextField(
             controller: _query,

@@ -45,11 +45,11 @@ class SupabaseGateway:
         rows = self._request(f"/rest/v1/profiles?id=eq.{uid}&select=role,is_active", token)
         if len(rows) != 1 or rows[0].get("is_active") is not True or rows[0].get("role") not in ("professional", "admin"):
             raise StorageFailure(403, "Tu cuenta no está activa")
-        return Actor(uid, token)
+        return Actor(uid, token, rows[0]["role"])
 
     def evaluation(self, actor: Actor, evaluation_id: str) -> StoredEvaluation:
         # Forward the user JWT so RLS handles current patient ownership and admin access.
-        rows = self._request(f"/rest/v1/evaluations?id=eq.{evaluation_id}&select=id,status,evaluation_images(*)", actor.token)
+        rows = self._request(f"/rest/v1/evaluations?id=eq.{evaluation_id}&select=id,status,evaluation_images(*),patients(is_active)", actor.token)
         if not rows:
             raise StorageFailure(404, "La evaluación no está disponible")
         row = rows[0]
@@ -57,7 +57,8 @@ class SupabaseGateway:
             ExpectedImage(m["position"], m["sha256"], m["content_type"], m["byte_size"],
                           m["upload_status"] == "uploaded", m.get("storage_provider"),
                           m.get("storage_bucket"), m.get("object_key"))
-            for m in row["evaluation_images"]))
+            for m in row["evaluation_images"]),
+            patient_active=(row.get("patients") or {}).get("is_active") is True)
 
     def finish(self, actor: Actor, evaluation: StoredEvaluation,
                images: list[VerifiedImage], bucket: str) -> None:

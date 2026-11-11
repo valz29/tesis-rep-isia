@@ -51,7 +51,7 @@ void main() {
     final p = Patient(
       id: id,
       dni: '00123456',
-      ownerId: 'forged-owner',
+      ownerId: 'professional-id',
       nombres: 'Test',
       apellidos: 'Patient',
       fechaNacimiento: DateTime(1980, 1, 2),
@@ -63,7 +63,9 @@ void main() {
     final records = await repository.list();
     expect(records.single.dni, '00123456');
     expect(records.single.ownerName, 'Owner');
-    expect(writes.every((body) => !body.containsKey('owner_id')), isTrue);
+    expect(writes.first['owner_id'], 'professional-id');
+    expect(writes.last.containsKey('owner_id'), isFalse);
+    expect(writes.every((body) => !body.containsKey('is_active')), isTrue);
     expect(writes.last.containsKey('id'), isFalse);
     expect(methods, isNot(contains('DELETE')));
   });

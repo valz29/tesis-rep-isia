@@ -198,7 +198,7 @@ void main() {
     );
   });
 
-  testWidgets('Admin can register, edit and reassign any patient', (
+  testWidgets('Admin manages patients without authoring evaluations', (
     tester,
   ) async {
     final dependencies = await createDependencies(seedPatient: true);
@@ -217,9 +217,10 @@ void main() {
     expect(find.byTooltip('Registrar paciente'), findsOneWidget);
     await tapVisible(tester, find.text(patient.nombreCompleto));
     expect(find.text('Editar paciente'), findsOneWidget);
-    expect(find.text('Nueva evaluación'), findsOneWidget);
+    expect(find.text('Nueva evaluación'), findsNothing);
     expect(find.text('Cambiar responsable'), findsOneWidget);
     expect(find.text('Profesional responsable'), findsOneWidget);
+    expect(find.text('Desactivar paciente'), findsOneWidget);
   });
 
   testWidgets('Menu supports a narrow screen and enlarged text', (

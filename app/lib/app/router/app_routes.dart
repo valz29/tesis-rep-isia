@@ -104,10 +104,14 @@ abstract final class AppRoutes {
           PatientDetailScreen(patientId: p.id, session: AppScope.of(c)),
         ),
       );
-  static Future<void> eye(BuildContext c, Patient p) => Navigator.push(
-    c,
-    _route<void>(EyeSelectionScreen(paciente: p, sesion: AppScope.of(c))),
-  );
+  static Future<void> eye(BuildContext c, Patient p) {
+    if (!AppScope.of(c).canEvaluate(p)) return Future.value();
+    return Navigator.push(
+      c,
+      _route<void>(EyeSelectionScreen(paciente: p, sesion: AppScope.of(c))),
+    );
+  }
+
   static Future<void> capture(
     BuildContext c,
     Patient p,
@@ -173,6 +177,7 @@ abstract final class AppRoutes {
         _route<void>(ImageViewerScreen(imagen: bytes, titulo: title)),
       );
   static void newEvaluation(BuildContext c) {
+    if (AppScope.of(c).isAdmin) return;
     Navigator.of(c).popUntil((r) => r.isFirst);
     patients(c, paraEvaluar: true);
   }

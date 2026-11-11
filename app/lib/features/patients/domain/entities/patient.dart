@@ -13,6 +13,8 @@ class Patient {
   final String? telefono;
   final String? direccion;
   final String? historiaClinica;
+  final bool isActive;
+  final String? deactivationReason;
 
   const Patient({
     required this.id,
@@ -26,6 +28,8 @@ class Patient {
     this.telefono,
     this.direccion,
     this.historiaClinica,
+    this.isActive = true,
+    this.deactivationReason,
   });
   String get nombreCompleto => '$nombres $apellidos';
   int ageAt(DateTime date) {

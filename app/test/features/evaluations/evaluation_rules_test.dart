@@ -131,7 +131,7 @@ void main() {
       throwsA(isA<AppFailure>()),
     );
     await patients.save(patient);
-    final right = await create(rightDraft, images(), 'staff-1');
+    final right = await create(rightDraft, images(), patient.ownerId!);
     final left = await create(
       EvaluationDraft(
         patientId: patient.id,
@@ -139,7 +139,7 @@ void main() {
         observaciones: 'Nueva visita',
       ),
       images(),
-      'staff-1',
+      patient.ownerId!,
     );
     expect(await records.list(), isEmpty);
     await save(right);

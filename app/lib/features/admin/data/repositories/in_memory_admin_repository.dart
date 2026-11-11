@@ -22,6 +22,23 @@ class InMemoryAdminRepository implements AdminRepository {
       .take(50)
       .toList();
   @override
+  Future<List<AdminAccount>> eligibleOwners(String query) async => accounts
+      .where(
+        (a) =>
+            a.role == AccountRole.professional &&
+            a.active &&
+            a.confirmed &&
+            '${a.name} ${a.email}'.toLowerCase().contains(query.toLowerCase()),
+      )
+      .take(50)
+      .toList();
+  @override
+  Future<void> setPatientActive(
+    String patientId,
+    bool active,
+    String reason,
+  ) async => throw const AppFailure('No disponible en este repositorio');
+  @override
   Future<void> updateUser(
     String id,
     String name,

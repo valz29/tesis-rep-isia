@@ -69,10 +69,11 @@ class HistoryScreen extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () => AppRoutes.patients(context, paraEvaluar: true),
-            child: const Text('Nueva evaluación'),
-          ),
+          if (!sesion.isAdmin)
+            FilledButton(
+              onPressed: () => AppRoutes.patients(context, paraEvaluar: true),
+              child: const Text('Nueva evaluación'),
+            ),
         ],
       ),
     ),

@@ -20,8 +20,19 @@ class CreateEvaluation {
     List<EvaluationImage> images,
     String professionalId,
   ) async {
-    if (await _patients.findById(draft.patientId) == null) {
+    final patient = await _patients.findById(draft.patientId);
+    if (patient == null) {
       throw const AppFailure('Selecciona un paciente registrado');
+    }
+    if (!patient.isActive) {
+      throw const AppFailure(
+        'El paciente está desactivado. Su historial se conserva',
+      );
+    }
+    if (patient.ownerId != null && patient.ownerId != professionalId) {
+      throw const AppFailure(
+        'Solo el profesional responsable puede evaluar al paciente',
+      );
     }
     if (images.length != 3) {
       throw const AppFailure('Selecciona tres imágenes diferentes');

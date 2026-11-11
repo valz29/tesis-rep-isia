@@ -2,17 +2,19 @@
 
 Aplicación Flutter organizada con Clean Architecture por funcionalidad, con la identidad verde y el flujo de tres imágenes del mismo ojo.
 
-## Estado al 5 de noviembre de 2026 · versión 1.2.0
+## Estado al 11 de noviembre de 2026 · versión 1.3.0
 
 Implementado en código: acceso por correo y contraseña, registro con confirmación, recuperación de contraseña, restauración de sesión, pacientes con creación/edición, búsqueda, historial y borradores de evaluación. Los adaptadores usan Supabase y las políticas SQL separan expedientes por profesional; el administrador gestiona todos los expedientes y las cuentas.
 
-Se creó el proyecto Supabase Retinazo y se aplicaron las cuatro migraciones. La cuenta administradora inicial está creada y verificada. Se comprobaron contra el servicio alojado el inicio de sesión, el rol protegido, las lecturas autorizadas, el rechazo de acceso anónimo y el bloqueo de cambios directos de rol y la gestión exclusiva mediante RPC autorizada. La validación completa en teléfono físico, incluidos enlaces de correo y cámara, sigue pendiente.
+Se creó el proyecto Supabase Retinazo y se aplicaron las cinco migraciones. La cuenta administradora inicial está creada y verificada. Se comprobaron contra el servicio alojado el inicio de sesión, el rol protegido, las lecturas autorizadas, el rechazo de acceso anónimo y el bloqueo de cambios directos de rol y la gestión exclusiva mediante RPC autorizada. La validación completa en teléfono físico, incluidos enlaces de correo y cámara, sigue pendiente.
 
 FastAPI está publicado en Render y guarda los originales en el bucket R2. Al guardar una evaluación se envían sus tres fotos; el historial puede recuperarlas desde la nube. El recorrido remoto se validó con PNG y cuentas sintéticas, incluyendo permisos y limpieza de datos de prueba. Los borradores anteriores que solo guardaron metadatos no adquieren fotos automáticamente. El modelo sigue pendiente; no se inventan grados ni confianza.
 
 Google está implementado como opción de acceso, desactivada hasta configurar el proveedor OAuth. El correo integrado de Supabase solo entrega a miembros del equipo y tiene un límite actual de dos mensajes por hora; para usuarios externos hace falta SMTP propio.
 
 Ver [administración y registro confirmado](../docs/ADMINISTRATION.md) para el alcance de Retinazo 1.1.0, las restricciones, pruebas y funciones por rol.
+
+Los pacientes solo se asignan a profesionales activos con correo confirmado. El administrador debe seleccionar un profesional al registrarlos y puede desactivar/reactivar sus expedientes con motivo y auditoría. Los pacientes desactivados conservan su historial, pero no admiten nuevas evaluaciones o cargas. No se ofrece borrado de pacientes desde la app.
 
 ## Estructura
 

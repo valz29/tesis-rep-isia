@@ -12,6 +12,7 @@ class StorageFailure(Exception):
 class Actor:
     id: str
     token: str
+    role: str = "professional"
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,7 @@ class StoredEvaluation:
     id: str
     status: str
     images: tuple[ExpectedImage, ...]
+    patient_active: bool = True
 
 
 @dataclass(frozen=True)

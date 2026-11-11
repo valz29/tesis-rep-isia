@@ -22,6 +22,8 @@ class SupabasePatientRepository implements PatientRepository {
     telefono: row['phone'] as String?,
     direccion: row['address'] as String?,
     historiaClinica: row['medical_history'] as String?,
+    isActive: row['is_active'] as bool? ?? true,
+    deactivationReason: row['deactivation_reason'] as String?,
   );
   Map<String, dynamic> _encode(Patient p) => {
     'dni': p.dni,
@@ -83,6 +85,7 @@ class SupabasePatientRepository implements PatientRepository {
     try {
       await _client.from('patients').insert({
         'id': patient.id,
+        if (patient.ownerId != null) 'owner_id': patient.ownerId,
         ..._encode(patient),
       });
     } catch (e) {

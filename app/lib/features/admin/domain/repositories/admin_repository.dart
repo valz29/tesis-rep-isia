@@ -5,6 +5,8 @@ import '../../../evaluations/domain/entities/evaluation_draft.dart';
 abstract interface class AdminRepository {
   Future<AdminOverview> overview();
   Future<List<AdminAccount>> users(String query, int offset);
+  Future<List<AdminAccount>> eligibleOwners(String query);
+  Future<void> setPatientActive(String patientId, bool active, String reason);
   Future<void> updateUser(
     String id,
     String name,

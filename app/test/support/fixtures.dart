@@ -14,6 +14,7 @@ import 'package:rd_app/features/evaluations/domain/repositories/image_acquisitio
 
 final patient = Patient(
   id: 'patient-1',
+  ownerId: 'demo@example.com',
   dni: '12345678',
   nombres: 'Paciente',
   apellidos: 'Ejemplo',

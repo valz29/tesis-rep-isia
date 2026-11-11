@@ -24,13 +24,17 @@ class PatientsController extends ChangeNotifier {
     this._newId,
   );
 
-  List<Patient> search(String query) => List.unmodifiable(
-    _patients.where(
-      (p) =>
-          p.dni.contains(query.trim()) ||
-          p.nombreCompleto.toLowerCase().contains(query.trim().toLowerCase()),
-    ),
-  );
+  List<Patient> search(String query, {bool inactive = false}) =>
+      List.unmodifiable(
+        _patients.where(
+          (p) =>
+              p.isActive != inactive &&
+              (p.dni.contains(query.trim()) ||
+                  p.nombreCompleto.toLowerCase().contains(
+                    query.trim().toLowerCase(),
+                  )),
+        ),
+      );
   Patient? byId(String id) {
     for (final p in _patients) {
       if (p.id == id) return p;
@@ -70,6 +74,7 @@ class PatientsController extends ChangeNotifier {
     String? direccion,
     String? historiaClinica,
     Patient? existing,
+    String? ownerId,
   }) async {
     if (busy) return null;
     final epoch = _epoch;
@@ -79,7 +84,7 @@ class PatientsController extends ChangeNotifier {
     try {
       final p = Patient(
         id: existing?.id ?? _newId(),
-        ownerId: existing?.ownerId,
+        ownerId: existing?.ownerId ?? ownerId,
         ownerName: existing?.ownerName,
         dni: dni,
         nombres: nombres,
@@ -89,6 +94,8 @@ class PatientsController extends ChangeNotifier {
         telefono: telefono,
         direccion: direccion,
         historiaClinica: historiaClinica,
+        isActive: existing?.isActive ?? true,
+        deactivationReason: existing?.deactivationReason,
       );
       if (existing == null) {
         await _register(p);

@@ -201,6 +201,10 @@ Las implementaciones en memoria permanecen como dobles explícitos de pruebas; n
 
 El módulo `features/admin` añade contratos, casos de uso, adaptadores y pantallas exclusivas, inyectados en `SessionController`. La tercera migración incorpora activación de perfiles, RPC administrativas y auditoría. El alcance vigente y la verificación se detallan en [ADMINISTRATION.md](../../docs/ADMINISTRATION.md). Las referencias anteriores a administrador de solo consulta describen la versión inicial y quedan sustituidas por esta ampliación.
 
+## Responsabilidad clínica y ciclo de vida 1.3.0
+
+La quinta migración restringe la responsabilidad de pacientes y la autoría de nuevas evaluaciones a profesionales. El administrador puede registrar pacientes eligiendo un profesional, corregirlos, reasignarlos y desactivarlos/reactivarlos. `Patient.isActive` y su motivo se decodifican en el adaptador; la interfaz separa Activos/Desactivados y bloquea acciones clínicas en pacientes inactivos. La mutación de estado pasa por `AdminRepository` y RPC, sin escritura directa de campos protegidos desde el móvil. La lectura del historial se conserva. Las referencias anteriores al administrador como autor clínico describen una versión superada. Se conservan las autorías históricas.
+
 ## Cloudflare R2 y FastAPI en Render (activo, 5 de noviembre de 2026)
 
 La elección de Cloudflare R2 sustituye la propuesta de Supabase Storage. FastAPI autoriza mediante Supabase y sube los originales verificados a R2; devuelve enlaces GET temporales al consultar imágenes. Está desplegado como Web Service en Render Free. Las cuentas y los datos estructurados siguen usando Supabase. El modelo permanece pendiente. La configuración local contiene `IMAGE_API_URL=https://retinazo-images.onrender.com`. `SupabaseEvaluationRepository` guarda primero el borrador y después solicita la carga a `ImageApiClient`; `loadImages` recupera las fotos al consultar el historial. El dominio no depende de HTTP ni Supabase. Se comprobaron permisos, persistencia e integridad contra los servicios alojados con cuentas y PNG sintéticos; el teléfono físico sigue pendiente. Ver [R2_STORAGE.md](../../docs/R2_STORAGE.md).

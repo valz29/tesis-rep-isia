@@ -1,22 +1,31 @@
-# Administración y confirmación de correo — Retinazo 1.1.0
+# Administración y confirmación de correo — Retinazo 1.3.0
 
-Estado al 2 de noviembre de 2026: la migración `20261102180000_admin_management.sql` está aplicada en Supabase y el módulo Flutter está implementado. El APK se compila para Android. La validación integral desde un teléfono continúa pendiente.
+Actualización del 11 de noviembre de 2026: la quinta migración `20261111180000_patient_lifecycle.sql` separa administración de responsabilidad clínica. El administrador gestiona expedientes, pero no es responsable de pacientes ni autor de nuevas evaluaciones. Las autorías históricas se conservan. La validación integral desde un teléfono continúa pendiente.
 
 ## Roles y pantallas
 
 | Función | Profesional | Administrador |
 |---|---|---|
 | Panel de inicio | Accesos a sus registros | Resumen global, usuarios, pacientes, evaluaciones, estadísticas y actividad |
-| Registro y edición de pacientes | Sus pacientes | Todos los pacientes; también puede registrar a su cargo |
-| Nueva evaluación | Sus pacientes | Cualquier paciente, con el administrador como autor de la nueva evaluación |
+| Registro y edición de pacientes | Sus pacientes activos | Todos los pacientes; al registrar debe elegir un profesional responsable |
+| Nueva evaluación | Sus pacientes activos | No; es una función clínica del profesional |
 | Historial | Sus pacientes | Todos los pacientes |
 | Correcciones de evaluación | Borradores propios según permisos existentes | Observaciones; ojo solo mientras sea borrador |
-| Reasignación de responsable | No | A una cuenta activa con correo confirmado |
+| Reasignación de responsable | No | Solo a profesionales activos con correo confirmado |
+| Desactivación/reactivación de paciente | No | Con motivo obligatorio al desactivar; se conservan evaluaciones e imágenes |
 | Usuarios | Sin acceso | Buscar y paginar, ver nombre, correo, rol, activación, confirmación y pacientes a cargo |
 | Gestión de cuentas | No | Editar nombre, rol y activación; eliminar solo sin expedientes ni evaluaciones como autor |
 | Auditoría administrativa | No | Consultar actor, acción, registro y fecha |
 
-El administrador no ve contraseñas, no confirma correos de otras personas ni modifica manualmente grados, confianza o versiones de predicción. El correo de una cuenta no se cambia desde este panel: requiere el flujo de verificación de su propietario. El modelo y el bucket siguen pendientes.
+El administrador no ve contraseñas, no confirma correos de otras personas ni modifica manualmente grados, confianza o versiones de predicción. El correo de una cuenta no se cambia desde este panel: requiere el flujo de verificación de su propietario. R2 está integrado mediante FastAPI en Render; el modelo sigue pendiente.
+
+## Ciclo de vida del paciente
+
+La lista muestra pacientes activos por defecto; el administrador puede abrir Desactivados. Desactivar registra fecha, actor y motivo sin borrar el expediente ni sus imágenes. Impide nuevas evaluaciones y cargas de archivos, pero mantiene la lectura autorizada del historial. La reactivación exige un profesional responsable activo con correo confirmado. No hay borrado de pacientes en la interfaz.
+
+El selector de responsables usa `admin_eligible_professionals`, que filtra en el servidor antes de limitar resultados. Los administradores están excluidos tanto del selector como de las restricciones SQL. Para promover una cuenta profesional a administrador se deben reasignar antes sus pacientes; se conserva la autoría de sus evaluaciones históricas.
+
+Los pacientes heredados de versiones que permitían asignar administradores no se borran automáticamente al aplicar la migración. Al desactivarlos se retira esa asignación inválida y quedan archivados sin responsable, hasta una reasignación explícita. La limpieza de datos existentes es una operación aparte y debe distinguir archivo reversible de eliminación definitiva.
 
 La reasignación cambia quién puede acceder al expediente; conserva la autoría original de las evaluaciones. Puede fallar si el responsable elegido ya tiene otro paciente con el mismo DNI. Una cuenta con historia clínica se desactiva en lugar de borrarse. No se puede desactivar, eliminar o degradar la propia cuenta administradora. Para conceder el rol administrador se exige correo confirmado y una confirmación en la interfaz.
 

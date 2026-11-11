@@ -136,3 +136,22 @@ def test_total_request_limit_applies_before_parsing(setup):
     response = client.put(f"/v1/evaluations/{EVAL}/images", content=b"x"*(1024*1024+3073),
                           headers={"Authorization": "Bearer synthetic-session"})
     assert response.status_code == 413 and not store.objects
+
+
+def test_inactive_patient_never_writes_but_retains_download_access(setup):
+    contents, gateway, store, client = setup
+    assert upload(client, contents).status_code == 204
+    gateway.record = replace(gateway.record, patient_active=False)
+    previous = dict(store.objects)
+    assert upload(client, contents).status_code == 409
+    assert store.objects == previous and gateway.finalized == 1
+    response = client.get(f"/v1/evaluations/{EVAL}/images",
+                          headers={"Authorization": "Bearer synthetic-session"})
+    assert response.status_code == 200 and len(response.json()["images"]) == 3
+
+
+def test_administrator_cannot_upload_images(setup):
+    contents, gateway, store, client = setup
+    gateway.authenticate = lambda token: Actor(USER, token, "admin")
+    assert upload(client, contents).status_code == 403
+    assert not store.objects and gateway.finalized == 0

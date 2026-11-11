@@ -226,7 +226,7 @@ class _ResultScreenState extends State<ResultScreen> {
                     child: Text(saved ? 'Guardado' : 'Guardar'),
                   ),
                 ),
-                ...[
+                if (!sesion.isAdmin) ...[
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton(
