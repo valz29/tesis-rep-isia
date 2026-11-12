@@ -239,11 +239,13 @@ def train(args):
             print("Parada temprana.")
             break
     print("Modelo guardado en", args.run / "best.pt")
+    if args.export_onnx and not args.smoke:
+        export(args)
 
 
-def load(args):
+def load(args, cpu=False):
     import torch
-    device = device_for(args)
+    device = torch.device("cpu") if cpu else device_for(args)
     checkpoint = torch.load(args.run / "best.pt", map_location="cpu", weights_only=True)
     if checkpoint.get("smoke"):
         raise ValueError("Esta corrida es una prueba tecnica sin pesos preentrenados. No usar para evaluar o predecir.")
@@ -266,7 +268,97 @@ def evaluate(args):
     print(json.dumps(result, indent=2))
 
 
+IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+ONNX_OPSET = 17
+
+
+def onnx_input(image, size):
+    """Entrada del ONNX en numpy (sin torch): mismo relleno y normalizacion que transform(size) sin aumentos."""
+    padded = PadToSquare(size)(ImageOps.exif_transpose(image).convert("RGB"))
+    scaled = (np.asarray(padded, dtype=np.float32) / 255.0 - IMAGENET_MEAN) / IMAGENET_STD
+    return np.ascontiguousarray(scaled.transpose(2, 0, 1)[None], dtype=np.float32)
+
+
+def onnx_session(path, gpu=True):
+    """Sesion de ONNX Runtime. Usa CUDA si esta disponible (paquete onnxruntime-gpu); si no, CPU."""
+    import onnxruntime
+    if gpu and hasattr(onnxruntime, "preload_dlls"):
+        try:
+            onnxruntime.preload_dlls()  # reutiliza las DLL de CUDA/cuDNN que trae PyTorch
+        except Exception:
+            pass
+    providers = [p for p in ("CUDAExecutionProvider", "CPUExecutionProvider") if p in onnxruntime.get_available_providers() and (gpu or p == "CPUExecutionProvider")]
+    return onnxruntime.InferenceSession(str(path), providers=providers)
+
+
+def time_session(session, sample, runs=20):
+    import time
+    session.run(None, {"image": sample})  # calentamiento
+    start = time.perf_counter()
+    for _ in range(runs):
+        session.run(None, {"image": sample})
+    return round((time.perf_counter() - start) / runs * 1000, 1)
+
+
+def export(args):
+    """Exporta best.pt a ONNX (salida: 5 puntuaciones softmax, no calibradas) y verifica contra PyTorch."""
+    import onnxruntime
+    import torch
+    network, size, _ = load(args, cpu=True)
+
+    class WithSoftmax(torch.nn.Module):
+        def __init__(self, inner):
+            super().__init__()
+            self.inner = inner
+
+        def forward(self, x):
+            return self.inner(x).softmax(1)
+
+    wrapped = WithSoftmax(network).eval()
+    path = args.onnx or args.run / "model.onnx"
+    if path.exists():
+        raise ValueError("El archivo ONNX ya existe. Usa --onnx con otro nombre.")
+    dummy = torch.zeros(1, 3, size, size)
+    torch.onnx.export(wrapped, dummy, str(path), input_names=["image"], output_names=["scores"], dynamic_axes={"image": {0: "batch"}, "scores": {0: "batch"}}, opset_version=ONNX_OPSET, dynamo=False)
+    session = onnx_session(path, gpu=False)  # la verificacion de equivalencia se hace en CPU
+    sample = np.random.default_rng(0).normal(size=(2, 3, size, size)).astype(np.float32)
+    with torch.inference_mode():
+        expected = wrapped(torch.from_numpy(sample)).numpy()
+    got = session.run(None, {"image": sample})[0]
+    max_diff = float(np.abs(expected - got).max())
+    if max_diff > 1e-3:
+        path.unlink()
+        raise RuntimeError(f"El ONNX no coincide con PyTorch (diferencia maxima {max_diff:.2e}). Exportacion descartada.")
+    one = sample[:1]
+    cpu_ms = time_session(session, one)
+    gpu_session = onnx_session(path)
+    gpu_ms = time_session(gpu_session, one) if gpu_session.get_providers()[0] == "CUDAExecutionProvider" else None
+    checkpoint_info = torch.load(args.run / "best.pt", map_location="cpu", weights_only=True)
+    info = {
+        "file": path.name, "size_mb": round(path.stat().st_size / 1024**2, 2), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "input": {"name": "image", "shape": ["batch", 3, size, size], "dtype": "float32", "channels": "RGB", "pad_to_square": "negro, bilineal", "mean": IMAGENET_MEAN.tolist(), "std": IMAGENET_STD.tolist()},
+        "output": {"name": "scores", "shape": ["batch", 5], "meaning": "softmax grados ICDR 0-4; no son probabilidades calibradas"},
+        "onnx_opset": ONNX_OPSET, "max_abs_diff_vs_pytorch": max_diff, "cpu_ms_per_image": cpu_ms, "gpu_ms_per_image": gpu_ms, "providers_available": onnxruntime.get_available_providers(),
+        "checkpoint_epoch": checkpoint_info.get("epoch"), "checkpoint_val_qwk": checkpoint_info.get("qwk"),
+        "torch": torch.__version__, "onnxruntime": onnxruntime.__version__,
+        "warning": "Experimental. No es diagnostico ni esta validado clinicamente.",
+    }
+    save_json(path.with_suffix(".json"), info)
+    print(json.dumps(info, indent=2))
+
+
+def predict_onnx(args):
+    session = onnx_session(args.onnx)
+    size = session.get_inputs()[0].shape[2]
+    with Image.open(args.image) as image:
+        probs = session.run(None, {"image": onnx_input(image, size)})[0][0].tolist()
+    print(json.dumps({"experimental_image_prediction": int(np.argmax(probs)), "scores_not_calibrated": probs, "provider": session.get_providers()[0], "warning": "Sin control de calidad ni validacion clinica o de captura 20D."}, indent=2))
+
+
 def predict(args):
+    if args.onnx:
+        return predict_onnx(args)
     import torch
     network, size, device = load(args)
     with Image.open(args.image) as image:
@@ -278,7 +370,7 @@ def predict(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["check", "prepare", "train", "evaluate", "predict"])
+    parser.add_argument("action", choices=["check", "prepare", "train", "evaluate", "predict", "export"])
     parser.add_argument("--data", type=Path, default=Path("data/aptos"))
     parser.add_argument("--splits", type=Path, default=Path("splits/aptos_seed42"))
     parser.add_argument("--run", type=Path, default=Path("runs/b0_320_seed42"))
@@ -292,6 +384,8 @@ def main():
     parser.add_argument("--partition", choices=["val", "test"], default="val")
     parser.add_argument("--image", type=Path)
     parser.add_argument("--drop-conflicts", action="store_true", help="prepare: excluir imagenes identicas con etiquetas contradictorias (se registran en conflictos_etiqueta_excluidos.csv).")
+    parser.add_argument("--onnx", type=Path, help="export: ruta de salida (por defecto <run>/model.onnx). predict: usar este ONNX en vez de best.pt.")
+    parser.add_argument("--export-onnx", action="store_true", help="train: exportar a ONNX al terminar.")
     parser.add_argument("--allow-cpu", action="store_true")
     parser.add_argument("--smoke", action="store_true", help="Dos lotes por fase; pesos aleatorios, solo prueba tecnica.")
     args = parser.parse_args()

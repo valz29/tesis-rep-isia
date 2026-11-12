@@ -4,3 +4,6 @@ scikit-learn>=1.5,<2
 Pillow>=10.4,<13
 tqdm>=4.66,<5
 opencv-python-headless>=5.0,<6
+onnx>=1.17,<2
+# Para inferencia ONNX en GPU, instala onnxruntime-gpu en lugar de onnxruntime.
+onnxruntime>=1.21,<2
