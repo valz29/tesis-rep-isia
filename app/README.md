@@ -2,7 +2,7 @@
 
 Aplicación Flutter organizada con Clean Architecture por funcionalidad, con la identidad verde y el flujo de tres imágenes del mismo ojo.
 
-## Estado al 11 de noviembre de 2026 · versión 1.3.0
+## Estado al 12 de noviembre de 2026 · versión 1.3.1
 
 Implementado en código: acceso por correo y contraseña, registro con confirmación, recuperación de contraseña, restauración de sesión, pacientes con creación/edición, búsqueda, historial y borradores de evaluación. Los adaptadores usan Supabase y las políticas SQL separan expedientes por profesional; el administrador gestiona todos los expedientes y las cuentas.
 
@@ -60,3 +60,11 @@ Nombre: Retinazo. Verde `#0F6B6B`, fondo `#F2F6F6`, tinta `#17292B`. Logo: `asse
 ## Imágenes en R2: integración activa
 
 Cloudflare R2 guarda los archivos y FastAPI en Render autoriza las operaciones. La configuración local contiene `IMAGE_API_URL=https://retinazo-images.onrender.com`. Guardar sube las tres fotos y el historial puede descargarlas después de reiniciar. La cuarta migración está aplicada. Render Free se suspende por inactividad; las solicitudes a la API permiten hasta tres minutos para tolerar la reactivación. La descarga directa de cada imagen mantiene un límite menor. Ver [R2_STORAGE.md](../docs/R2_STORAGE.md).
+
+## Guardado e historial · 1.3.1
+
+Guardar muestra progreso, bloquea envíos duplicados y vuelve al inicio únicamente después de confirmar la carga. Se consulta solo la evaluación guardada, sin recargar todo el historial. Un fallo conserva la pantalla para reintentar; un borrador no equivale a una carga confirmada.
+
+El historial crea filas bajo demanda y recupera la primera foto autorizada sin abrir el detalle. Las miniaturas se reducen localmente y se conservan en una caché de sesión acotada; si fallan, ofrecen reintento. Los originales clínicos no se recomprimen ni se sustituyen. Al abrir captura se intenta preparar el servicio HTTP en segundo plano, sin mantenerlo despierto periódicamente.
+
+Las esperas todavía dependen de la red, del tamaño de los originales y de la disponibilidad del alojamiento. La prueba física del APK en el teléfono del usuario sigue pendiente.

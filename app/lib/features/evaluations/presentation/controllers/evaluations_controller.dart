@@ -21,7 +21,11 @@ class EvaluationsController extends ChangeNotifier {
   String? imageError;
   String? loadingImagesFor;
   EvaluationsController(this._repository, this._create, this._save);
-  bool isSaved(String id) => _evaluations.any((e) => e.id == id);
+  bool isSaved(String id) {
+    final evaluation = byId(id);
+    return evaluation != null && evaluation.status != EvaluationStatus.draft;
+  }
+
   int countByEye(OjoEvaluado eye) =>
       _evaluations.where((e) => e.ojo == eye).length;
   int get imageCount =>
@@ -78,21 +82,35 @@ class EvaluationsController extends ChangeNotifier {
     error = null;
     _notify();
     try {
-      await _save(evaluation);
-      final records = await _repository.list();
+      final saved = await _save(evaluation);
       if (_disposed || epoch != _epoch) return false;
-      _evaluations = records;
+      _evaluations = List.unmodifiable([
+        saved,
+        ..._evaluations.where((record) => record.id != saved.id),
+      ]);
       return true;
     } on AppFailure catch (e) {
-      error = e.message;
+      if (epoch == _epoch) error = e.message;
       return false;
     } catch (_) {
-      error = 'No se pudo guardar la evaluación';
+      if (epoch == _epoch) error = 'No se pudo guardar la evaluación';
       return false;
     } finally {
-      busy = false;
-      _notify();
+      if (epoch == _epoch) {
+        busy = false;
+        _notify();
+      }
     }
+  }
+
+  Future<void> prepareImageService() => _repository.prepareImageService();
+
+  Future<EvaluationImage?> loadThumbnail(String id) async {
+    final evaluation = byId(id);
+    if (_disposed || evaluation == null) return null;
+    final epoch = _epoch;
+    final preview = await _repository.loadThumbnail(evaluation);
+    return _disposed || epoch != _epoch ? null : preview;
   }
 
   Future<void> loadImages(String id) async {
@@ -131,6 +149,7 @@ class EvaluationsController extends ChangeNotifier {
     loadingImagesFor = null;
     await _repository.clear();
     _evaluations = const [];
+    busy = false;
     error = null;
     _notify();
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:rd_app/app/router/app_routes.dart';
@@ -37,6 +39,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   void initState() {
     super.initState();
     _capture.addListener(_changed);
+    unawaited(widget.sesion.evaluations.prepareImageService());
   }
 
   void _changed() {

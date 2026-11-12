@@ -7,7 +7,7 @@ class SaveEvaluation {
   final EvaluationRepository _evaluations;
   final PatientRepository _patients;
   const SaveEvaluation(this._evaluations, this._patients);
-  Future<void> call(Evaluation evaluation) async {
+  Future<Evaluation> call(Evaluation evaluation) async {
     final patient = await _patients.findById(evaluation.patientId);
     if (patient == null) {
       throw const AppFailure(
@@ -25,6 +25,6 @@ class SaveEvaluation {
         'Solo el profesional responsable puede guardar la evaluación',
       );
     }
-    await _evaluations.save(evaluation);
+    return _evaluations.save(evaluation);
   }
 }

@@ -330,14 +330,18 @@ void main() {
       await tapVisible(tester, find.widgetWithText(FilledButton, 'Guardar'));
       expect(session.evaluations.evaluations.length, 1);
       expect(session.evaluations.evaluations.single.imagenes.length, 3);
+      expect(find.byType(HomeScreen), findsOneWidget);
+      expect(find.byType(ResultScreen), findsNothing);
       expect(
-        tester
-            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Guardado'))
-            .onPressed,
-        isNull,
+        find.text('Evaluación e imágenes guardadas correctamente.'),
+        findsOneWidget,
       );
       await tester.pumpWidget(
-        harness(dependencies, HistoryScreen(sesion: session)),
+        harness(
+          dependencies,
+          HistoryScreen(sesion: session),
+          key: const ValueKey('history-after-save'),
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.text(patient.nombreCompleto), findsOneWidget);

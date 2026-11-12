@@ -134,4 +134,66 @@ void main() {
       throwsA(isA<AppFailure>()),
     );
   });
+  test('History downloads only the first authorized original for its preview', () async {
+    var originals = 0;
+    final metadata = [
+      for (var position = 1; position <= 3; position++)
+        EvaluationImageMetadata(
+          position: position,
+          sha256: sha256.convert(photo(position)).toString(),
+          contentType: 'image/png',
+          byteSize: photo(position).length,
+          uploaded: true,
+        ),
+    ];
+    final client = MockClient((request) async {
+      if (request.url.host == 'images.example.invalid') {
+        expect(request.headers['Authorization'], 'Bearer synthetic');
+        return http.Response(
+          jsonEncode({
+            'images': [
+              for (final position in [3, 2, 1])
+                {
+                  'position': position,
+                  'url':
+                      'https://account.r2.cloudflarestorage.com/image-$position',
+                },
+            ],
+          }),
+          200,
+        );
+      }
+      originals++;
+      expect(request.url.path, '/image-1');
+      expect(request.headers.containsKey('Authorization'), isFalse);
+      return http.Response.bytes(photo(1), 200);
+    });
+    addTearDown(client.close);
+    final image = await ImageApiClient(
+      Uri.parse('https://images.example.invalid'),
+      () => 'synthetic',
+      transport: client,
+    ).downloadFirst(id, metadata);
+    expect(image.bytes, photo(1));
+    expect(originals, 1);
+  });
+
+  test('User-triggered preparation coalesces concurrent health requests and never sends a token', () async {
+    var requests = 0;
+    final client = MockClient((request) async {
+      requests++;
+      expect(request.url.path, '/health');
+      expect(request.headers.containsKey('Authorization'), isFalse);
+      return http.Response('{}', 200);
+    });
+    addTearDown(client.close);
+    final api = ImageApiClient(
+      Uri.parse('https://images.example.invalid'),
+      () => 'synthetic',
+      transport: client,
+    );
+    await Future.wait([api.prepare(), api.prepare()]);
+    await api.prepare();
+    expect(requests, 1);
+  });
 }

@@ -67,3 +67,9 @@ Las pruebas PostgreSQL se ejecutan en un contenedor desechable sin modificar la 
 ## Trabajo funcional pendiente
 
 La recuperación persistente de cargas, edición concurrente, paginación, actualización de datos remotos, SMTP, OAuth de Google, firma de distribución y modelo de análisis requieren tareas funcionales separadas. Esta reorganización no afirma haber completado esas integraciones ni la validación en un teléfono físico.
+
+## Segunda comprobación de archivos y flujo · 12 de noviembre
+
+Se comprobó la alcanzabilidad de los archivos Dart desde `main.dart` y las pruebas: no se detectaron bibliotecas huérfanas. Los cinco `__init__.py` son marcadores documentados de paquetes usados por el backend y su empaquetado. No se eliminan por carecer de funciones ejecutables. No se detectaron archivos versionados vacíos que justificaran borrado.
+
+La versión móvil 1.3.1 corrige el regreso tras guardar y las miniaturas del historial. Estas correcciones no cambian las migraciones, el modelo ni las credenciales alojadas.

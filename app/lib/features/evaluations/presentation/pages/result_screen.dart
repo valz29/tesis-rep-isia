@@ -41,12 +41,20 @@ class _ResultScreenState extends State<ResultScreen> {
   Future<void> _guardar(BuildContext context) async {
     final ok = await sesion.evaluations.save(evaluacion);
     if (!context.mounted) return;
+    if (ok) {
+      final messenger = ScaffoldMessenger.of(context);
+      AppRoutes.home(context);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Evaluación e imágenes guardadas correctamente.'),
+        ),
+      );
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok
-              ? 'Datos de evaluación añadidos al historial.'
-              : sesion.evaluations.error ?? 'No se pudo guardar la evaluación',
+          sesion.evaluations.error ?? 'No se pudo guardar la evaluación',
         ),
       ),
     );
@@ -90,168 +98,195 @@ class _ResultScreenState extends State<ResultScreen> {
       final patient = sesion.patients.byId(record.patientId);
       final saved = sesion.evaluations.isSaved(record.id);
       final result = record.result;
-      return Scaffold(
-        appBar: AppBar(title: const Text('Resultado')),
-        body: PageBody(
-          children: [
-            Text(
-              result == null ? 'Grado —' : 'Grado ${result.gradoICDR}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(record.statusLabel, textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            if (sesion.isAdmin && saved)
-              OutlinedButton.icon(
-                onPressed: () => AppRoutes.adminEvaluation(context, record),
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Editar evaluación'),
-              ),
-            if (patient != null)
-              PatientSummary(paciente: patient, ojo: record.ojo),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(child: _photo(context, record, 0)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 28,
-                        horizontal: 10,
-                      ),
-                      child: Column(
-                        children: [
-                          const Text('Confianza'),
-                          const SizedBox(height: 10),
-                          Text(
-                            result?.confianza == null
-                                ? '—'
-                                : '${(result!.confianza! * 100).toStringAsFixed(0)}%',
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+      return PopScope(
+        canPop: !sesion.evaluations.busy,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Resultado')),
+          body: PageBody(
+            children: [
+              Text(
+                result == null ? 'Grado —' : 'Grado ${result.gradoICDR}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            if (record.imagesStored && record.imagenes.isEmpty) ...[
-              if (sesion.evaluations.loadingImagesFor == record.id)
-                const LinearProgressIndicator(),
-              if (sesion.evaluations.imageError != null)
-                Text(sesion.evaluations.imageError!),
-              TextButton.icon(
-                onPressed: sesion.evaluations.loadingImagesFor != null
-                    ? null
-                    : () => sesion.evaluations.loadImages(record.id),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Recuperar imágenes'),
               ),
-            ],
-            const Text(
-              'Las tres imágenes del ojo',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                for (var i = 0; i < 3; i++)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Column(
-                        children: [
-                          _photo(context, record, i, height: 76),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Imagen ${i + 1}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Descripción',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              record.status == EvaluationStatus.draft
-                  ? 'Se conserva la información de la evaluación. Las fotografías aún no están almacenadas en la nube.'
-                  : result == null
-                  ? 'Sin resultado disponible.'
-                  : 'Versión del modelo: ${result.modelVersion}',
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Recomendación',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 6),
-            const Text('Sin recomendación disponible.'),
-            if (record.observaciones != null) ...[
+              const SizedBox(height: 8),
+              Text(record.statusLabel, textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              if (sesion.isAdmin && saved)
+                OutlinedButton.icon(
+                  onPressed: () => AppRoutes.adminEvaluation(context, record),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Editar evaluación'),
+                ),
+              if (patient != null)
+                PatientSummary(paciente: patient, ojo: record.ojo),
               const SizedBox(height: 20),
-              const Text(
-                'Observaciones',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Text(record.observaciones!),
-            ],
-            const SizedBox(height: 20),
-            Text(
-              record.fechaLabel,
-              style: const TextStyle(color: Colors.black54),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: saved || sesion.evaluations.busy
-                        ? null
-                        : () => _guardar(context),
-                    child: Text(saved ? 'Guardado' : 'Guardar'),
-                  ),
-                ),
-                if (!sesion.isAdmin) ...[
+              Row(
+                children: [
+                  Expanded(child: _photo(context, record, 0)),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => AppRoutes.newEvaluation(context),
-                      child: const Text('Nueva evaluación'),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 28,
+                          horizontal: 10,
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('Confianza'),
+                            const SizedBox(height: 10),
+                            Text(
+                              result?.confianza == null
+                                  ? '—'
+                                  : '${(result!.confianza! * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                if (desdeHistorial) {
-                  Navigator.pop(context);
-                } else {
-                  Navigator.of(context).popUntil((r) => r.isFirst);
-                }
-              },
-              child: Text(
-                desdeHistorial ? 'Volver al historial' : 'Volver al inicio',
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
+              const SizedBox(height: 20),
+              if (record.imagesStored && record.imagenes.isEmpty) ...[
+                if (sesion.evaluations.loadingImagesFor == record.id)
+                  const LinearProgressIndicator(),
+                if (sesion.evaluations.imageError != null)
+                  Text(sesion.evaluations.imageError!),
+                TextButton.icon(
+                  onPressed: sesion.evaluations.loadingImagesFor != null
+                      ? null
+                      : () => sesion.evaluations.loadImages(record.id),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Recuperar imágenes'),
+                ),
+              ],
+              const Text(
+                'Las tres imágenes del ojo',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  for (var i = 0; i < 3; i++)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Column(
+                          children: [
+                            _photo(context, record, i, height: 76),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Imagen ${i + 1}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Descripción',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                record.status == EvaluationStatus.draft
+                    ? 'Se conserva la información de la evaluación. Las fotografías aún no están almacenadas en la nube.'
+                    : result == null
+                    ? 'Sin resultado disponible.'
+                    : 'Versión del modelo: ${result.modelVersion}',
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Recomendación',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+              const Text('Sin recomendación disponible.'),
+              if (record.observaciones != null) ...[
+                const SizedBox(height: 20),
+                const Text(
+                  'Observaciones',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Text(record.observaciones!),
+              ],
+              const SizedBox(height: 20),
+              Text(
+                record.fechaLabel,
+                style: const TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed:
+                          saved || sesion.evaluations.busy || sesion.isAdmin
+                          ? null
+                          : () => _guardar(context),
+                      child: Text(
+                        sesion.evaluations.busy
+                            ? 'Guardando…'
+                            : saved
+                            ? 'Guardado'
+                            : 'Guardar',
+                      ),
+                    ),
+                  ),
+                  if (!sesion.isAdmin) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: sesion.evaluations.busy
+                            ? null
+                            : () => AppRoutes.newEvaluation(context),
+                        child: const Text('Nueva evaluación'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (sesion.evaluations.busy) ...[
+                const SizedBox(height: 16),
+                const LinearProgressIndicator(),
+                const SizedBox(height: 8),
+                const Text(
+                  'Guardando la evaluación y subiendo las tres imágenes. '
+                  'La espera depende de la conexión y del tamaño de las fotos.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: sesion.evaluations.busy
+                    ? null
+                    : () {
+                        if (desdeHistorial) {
+                          Navigator.pop(context);
+                        } else {
+                          Navigator.of(context).popUntil((r) => r.isFirst);
+                        }
+                      },
+                child: Text(
+                  desdeHistorial ? 'Volver al historial' : 'Volver al inicio',
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       );
     },

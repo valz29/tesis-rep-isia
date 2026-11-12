@@ -132,3 +132,11 @@ Desde la raíz, las comprobaciones adicionales son `backend/.venv/bin/python -m 
 - Integración del modelo de análisis.
 
 Ver [administración](../../docs/ADMINISTRATION.md), [base de datos](../../docs/DATABASE.md), [imágenes R2](../../docs/R2_STORAGE.md) e [inventario y criterios de organización](../../docs/CODE_ORGANIZATION.md).
+
+## Guardado y miniaturas · 1.3.1
+
+`EvaluationRepository.save` devuelve el registro persistido. El controlador lo incorpora al historial local sin solicitar la lista completa. La pantalla muestra espera, evita navegación y envíos duplicados durante la carga y regresa al inicio tras el éxito. Los errores permiten reintentar el mismo identificador.
+
+`EvaluationThumbnail` solicita una miniatura al repositorio para cada fila visible. Se descarga solo el primer original autorizado, se verifica su tamaño/hash y `thumbnail_encoder.dart` genera una vista pequeña en memoria. La cola limita la concurrencia y la caché mantiene hasta 40 miniaturas; ambas se descartan al cerrar sesión. Las tres imágenes de detalle se descargan concurrentemente para reducir la espera y evitar consumir sus enlaces temporales en cola.
+
+La apertura de captura inicia una preparación HTTP opcional contra `/health`; fallar en esa preparación no bloquea elegir fotos. No es un monitor periódico ni garantiza que el alojamiento responda sin demora.

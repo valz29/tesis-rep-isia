@@ -72,10 +72,50 @@ class ImageApiClient {
     _ => 'El servicio de imágenes no está disponible. Reintenta más tarde',
   });
 
+  Future<void>? _preparing;
+  DateTime? _lastPrepared;
+
+  /// A user opening capture can wake the service while choosing their photos.
+  Future<void> prepare() {
+    if (_preparing != null) return _preparing!;
+    if (_lastPrepared != null &&
+        DateTime.now().difference(_lastPrepared!) <
+            const Duration(minutes: 5)) {
+      return Future.value();
+    }
+    _preparing = _probe();
+    return _preparing!.whenComplete(() => _preparing = null);
+  }
+
+  Future<void> _probe() async {
+    final client = transport ?? http.Client();
+    try {
+      final response = await client
+          .get(baseUrl.resolve('/health'))
+          .timeout(const Duration(minutes: 3));
+      if (response.statusCode == 200) _lastPrepared = DateTime.now();
+    } catch (_) {
+      // Warming is optional; upload reports actionable failures when requested.
+    } finally {
+      if (transport == null) client.close();
+    }
+  }
+
   Future<List<EvaluationImage>> download(
     String id,
     List<EvaluationImageMetadata> metadata,
-  ) async {
+  ) => _download(id, metadata);
+
+  Future<EvaluationImage> downloadFirst(
+    String id,
+    List<EvaluationImageMetadata> metadata,
+  ) async => (await _download(id, metadata, firstOnly: true)).first;
+
+  Future<List<EvaluationImage>> _download(
+    String id,
+    List<EvaluationImageMetadata> metadata, {
+    bool firstOnly = false,
+  }) async {
     final client = transport ?? http.Client();
     try {
       final response = await client
@@ -84,57 +124,27 @@ class ImageApiClient {
       if (response.statusCode != 200) _fail(response.statusCode);
       final rows =
           (jsonDecode(response.body) as Map<String, dynamic>)['images'] as List;
-      final expected = metadata.where((m) => m.uploaded).toList()
-        ..sort((a, b) => a.position.compareTo(b.position));
+      final expected = metadata.where((image) => image.uploaded).toList()
+        ..sort((first, second) => first.position.compareTo(second.position));
       rows.sort(
-        (a, b) => (a['position'] as num).compareTo(b['position'] as num),
+        (first, second) =>
+            (first['position'] as num).compareTo(second['position'] as num),
       );
       if (expected.length != 3 || rows.length != 3) {
         throw const AppFailure(
           'Todavía no están confirmadas las tres imágenes',
         );
       }
-      final images = <EvaluationImage>[];
-      for (var i = 0; i < 3; i++) {
-        final row = rows[i] as Map<String, dynamic>;
-        final uri = Uri.parse(row['url'] as String);
-        if (row['position'] != expected[i].position ||
-            uri.scheme != 'https' ||
-            !uri.host.endsWith('.r2.cloudflarestorage.com') ||
-            uri.userInfo.isNotEmpty ||
-            uri.fragment.isNotEmpty) {
-          throw const AppFailure('La referencia de imagen no es válida');
-        }
-        // Never forward the Supabase bearer token to the R2 signed URL.
-        final file = await client
-            .send(http.Request('GET', uri))
-            .timeout(const Duration(seconds: 30));
-        if (file.statusCode != 200) {
-          await file.stream.drain<void>().timeout(const Duration(seconds: 30));
-          throw const AppFailure(
-            'El enlace de la imagen venció o la descarga falló. Reintenta',
-          );
-        }
-        final bytes = <int>[];
-        await for (final chunk in file.stream.timeout(
-          const Duration(seconds: 30),
-        )) {
-          bytes.addAll(chunk);
-          if (bytes.length > expected[i].byteSize) {
-            throw const AppFailure(
-              'El archivo recibido supera el tamaño registrado',
-            );
-          }
-        }
-        if (bytes.length != expected[i].byteSize ||
-            sha256.convert(bytes).toString() != expected[i].sha256) {
-          throw const AppFailure(
-            'La imagen recibida no coincide con el registro',
-          );
-        }
-        images.add(EvaluationImage(Uint8List.fromList(bytes)));
-      }
-      return images;
+      // Fetch full-size detail images together so short-lived links do not wait
+      // for previous large downloads. History asks only for the first image.
+      return await Future.wait([
+        for (var index = 0; index < (firstOnly ? 1 : 3); index++)
+          _readImage(
+            client,
+            rows[index] as Map<String, dynamic>,
+            expected[index],
+          ),
+      ]);
     } on AppFailure {
       rethrow;
     } catch (_) {
@@ -144,5 +154,46 @@ class ImageApiClient {
     } finally {
       if (transport == null) client.close();
     }
+  }
+
+  Future<EvaluationImage> _readImage(
+    http.Client client,
+    Map<String, dynamic> row,
+    EvaluationImageMetadata expected,
+  ) async {
+    final uri = Uri.parse(row['url'] as String);
+    if (row['position'] != expected.position ||
+        uri.scheme != 'https' ||
+        !uri.host.endsWith('.r2.cloudflarestorage.com') ||
+        uri.userInfo.isNotEmpty ||
+        uri.fragment.isNotEmpty) {
+      throw const AppFailure('La referencia de imagen no es válida');
+    }
+    // Never forward the Supabase bearer token to the R2 signed URL.
+    final file = await client
+        .send(http.Request('GET', uri))
+        .timeout(const Duration(seconds: 30));
+    if (file.statusCode != 200) {
+      await file.stream.drain<void>().timeout(const Duration(seconds: 30));
+      throw const AppFailure(
+        'El enlace de la imagen venció o la descarga falló. Reintenta',
+      );
+    }
+    final bytes = <int>[];
+    await for (final chunk in file.stream.timeout(
+      const Duration(seconds: 30),
+    )) {
+      bytes.addAll(chunk);
+      if (bytes.length > expected.byteSize) {
+        throw const AppFailure(
+          'El archivo recibido supera el tamaño registrado',
+        );
+      }
+    }
+    if (bytes.length != expected.byteSize ||
+        sha256.convert(bytes).toString() != expected.sha256) {
+      throw const AppFailure('La imagen recibida no coincide con el registro');
+    }
+    return EvaluationImage(Uint8List.fromList(bytes));
   }
 }
