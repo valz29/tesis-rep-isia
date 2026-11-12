@@ -84,3 +84,6 @@ desktop.ini
 *.log
 *.tmp
 *.bak
+
+# Documentacion y notas locales (no se suben al repo)
+docs-local/
