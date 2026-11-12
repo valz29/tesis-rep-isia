@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2600" viewBox="0 0 3600 2600">
+<title>Retinazo: componentes y responsabilidades</title>
+<desc>Flutter con Dart usa Supabase Auth y PostgreSQL. FastAPI, alojado en Render, valida el acceso y usa Boto3 para almacenar imágenes en Cloudflare R2. La aplicación descarga imágenes con enlaces firmados.</desc>
+<rect width="3600" height="2600" fill="#f5f9f8"/>
+<text x="100" y="129.0" font-family="DejaVu Sans, sans-serif" font-size="78" font-weight="700" fill="#06635f">Retinazo</text>
+<text x="505" y="132.3" font-family="DejaVu Sans, sans-serif" font-size="65" font-weight="700" fill="#183c3b">Componentes y responsabilidades</text>
+<text x="103" y="205.7" font-family="DejaVu Sans, sans-serif" font-size="35" font-weight="400" fill="#52716e">Arquitectura implementada · aplicación móvil, identidad, datos y almacenamiento</text>
+<polyline points="100,247 3500,247" fill="none" stroke="#cbded8" stroke-width="3" stroke-linejoin="round" />
+<rect x="100" y="309" width="1320" height="850" rx="30" fill="#e1ece8" stroke="none" stroke-width="2"/>
+<rect x="100" y="300" width="1320" height="850" rx="30" fill="#ffffff" stroke="#cbded8" stroke-width="3"/>
+<rect x="100" y="300" width="1320" height="160" rx="30" fill="#087f70" stroke="none" stroke-width="2"/>
+<rect x="100" y="410" width="1320" height="50" rx="0" fill="#087f70" stroke="none" stroke-width="2"/>
+<rect x="130" y="331" width="82" height="82" rx="19" fill="#ffffff" stroke="none" stroke-width="2"/>
+<text x="145" y="379.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#087f70">UI</text>
+<text x="240" y="370.5" font-family="DejaVu Sans, sans-serif" font-size="47" font-weight="700" fill="#ffffff">Flutter · Dart</text>
+<text x="240" y="422.8" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#e0f6ee">Flutter 3.47.2  |  Dart 3.13.2</text>
+<text x="142" y="521.3" font-family="DejaVu Sans, sans-serif" font-size="26" font-weight="700" fill="#087f70">APLICACIÓN MÓVIL</text>
+<rect x="144" y="567" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="172" y="584.1" font-family="DejaVu Sans, sans-serif" font-size="33" font-weight="400" fill="#183c3b">Vistas, formularios y navegación escritos en Dart.</text>
+<rect x="144" y="631.86" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="172" y="648.9" font-family="DejaVu Sans, sans-serif" font-size="33" font-weight="400" fill="#183c3b">Acceso, registro, pacientes e historial de evaluaciones.</text>
+<rect x="144" y="696.72" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="172" y="713.8" font-family="DejaVu Sans, sans-serif" font-size="33" font-weight="400" fill="#183c3b">Cámara o galería: tres imágenes de un mismo ojo.</text>
+<rect x="144" y="761.58" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="172" y="778.6" font-family="DejaVu Sans, sans-serif" font-size="33" font-weight="400" fill="#183c3b">Controladores y casos de uso separados de los datos.</text>
+<text x="144" y="846.1" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="700" fill="#52716e">Bibliotecas del cliente</text>
+<text x="144" y="893.8" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#183c3b">supabase_flutter 2.18.3 · image_picker 1.2.3 · http 1.6.0</text>
+<rect x="140" y="936" width="1240" height="174" rx="18" fill="#edf7f3" stroke="none" stroke-width="2"/>
+<text x="166" y="975.7" font-family="DejaVu Sans, sans-serif" font-size="24" font-weight="700" fill="#087f70">POR QUÉ SE ELIGIÓ</text>
+<text x="166" y="1024.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#183c3b">Permite compartir el código móvil y acceder a funciones del teléfono, con una</text>
+<text x="166" y="1067.2" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#183c3b">interfaz consistente.</text>
+<rect x="2050" y="309" width="1450" height="850" rx="30" fill="#e1ece8" stroke="none" stroke-width="2"/>
+<rect x="2050" y="300" width="1450" height="850" rx="30" fill="#ffffff" stroke="#cbded8" stroke-width="3"/>
+<rect x="2050" y="300" width="1450" height="160" rx="30" fill="#087f70" stroke="none" stroke-width="2"/>
+<rect x="2050" y="410" width="1450" height="50" rx="0" fill="#087f70" stroke="none" stroke-width="2"/>
+<rect x="2080" y="331" width="82" height="82" rx="19" fill="#ffffff" stroke="none" stroke-width="2"/>
+<text x="2095" y="379.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#087f70">SB</text>
+<text x="2190" y="370.5" font-family="DejaVu Sans, sans-serif" font-size="47" font-weight="700" fill="#ffffff">Supabase</text>
+<text x="2190" y="422.8" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#e0f6ee">Plataforma gestionada: identidad + PostgreSQL</text>
+<rect x="2085" y="500" width="650" height="610" rx="20" fill="#f7fbf9" stroke="#cbded8" stroke-width="2"/>
+<rect x="2770" y="500" width="695" height="610" rx="20" fill="#f7fbf9" stroke="#cbded8" stroke-width="2"/>
+<text x="2110" y="560.3" font-family="DejaVu Sans, sans-serif" font-size="37" font-weight="700" fill="#087f70">Supabase Auth</text>
+<text x="2110" y="606.1" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#52716e">Servicio gestionado</text>
+<rect x="2110" y="660" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2138" y="673.0" font-family="DejaVu Sans, sans-serif" font-size="28" font-weight="400" fill="#183c3b">Crea y verifica cuentas.</text>
+<rect x="2110" y="712.76" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2138" y="725.7" font-family="DejaVu Sans, sans-serif" font-size="28" font-weight="400" fill="#183c3b">Confirma el correo electrónico.</text>
+<rect x="2110" y="765.52" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2138" y="778.5" font-family="DejaVu Sans, sans-serif" font-size="28" font-weight="400" fill="#183c3b">Gestiona contraseñas y sesión.</text>
+<rect x="2110" y="818.28" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2138" y="831.2" font-family="DejaVu Sans, sans-serif" font-size="28" font-weight="400" fill="#183c3b">Emite tokens de acceso JWT.</text>
+<text x="2110" y="939.9" font-family="DejaVu Sans, sans-serif" font-size="23" font-weight="700" fill="#087f70">POR QUÉ SE ELIGIÓ</text>
+<text x="2110" y="986.1" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#183c3b">Resuelve la identidad sin desarrollar un</text>
+<text x="2110" y="1024.5" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#183c3b">sistema de autenticación propio.</text>
+<text x="2795" y="560.3" font-family="DejaVu Sans, sans-serif" font-size="37" font-weight="700" fill="#087f70">PostgreSQL 17.11</text>
+<text x="2795" y="606.1" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#52716e">Base de datos en Supabase</text>
+<rect x="2795" y="660" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2823" y="673.0" font-family="DejaVu Sans, sans-serif" font-size="28" font-weight="400" fill="#183c3b">Perfiles y roles: profiles.</text>
+<rect x="2795" y="712.76" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2823" y="725.7" font-family="DejaVu Sans, sans-serif" font-size="28" font-weight="400" fill="#183c3b">Pacientes: patients.</text>
+<rect x="2795" y="765.52" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2823" y="778.5" font-family="DejaVu Sans, sans-serif" font-size="28" font-weight="400" fill="#183c3b">Evaluaciones y metadatos.</text>
+<rect x="2795" y="818.28" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2823" y="831.2" font-family="DejaVu Sans, sans-serif" font-size="28" font-weight="400" fill="#183c3b">Relaciones y permisos RLS.</text>
+<text x="2795" y="887.3" font-family="DejaVu Sans, sans-serif" font-size="26" font-weight="700" fill="#183c3b">profiles se vincula con auth.users</text>
+<text x="2795" y="939.9" font-family="DejaVu Sans, sans-serif" font-size="23" font-weight="700" fill="#087f70">POR QUÉ SE ELIGIÓ</text>
+<text x="2795" y="986.1" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#183c3b">Los datos tienen relaciones, integridad y</text>
+<text x="2795" y="1024.5" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#183c3b">permisos por fila. Los archivos van en R2.</text>
+<rect x="100" y="1619" width="1320" height="720" rx="30" fill="#e1ece8" stroke="none" stroke-width="2"/>
+<rect x="100" y="1610" width="1320" height="720" rx="30" fill="#ffffff" stroke="#cbded8" stroke-width="3"/>
+<rect x="100" y="1610" width="1320" height="160" rx="30" fill="#c56c13" stroke="none" stroke-width="2"/>
+<rect x="100" y="1720" width="1320" height="50" rx="0" fill="#c56c13" stroke="none" stroke-width="2"/>
+<rect x="130" y="1641" width="82" height="82" rx="19" fill="#ffffff" stroke="none" stroke-width="2"/>
+<text x="145" y="1689.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#c56c13">R2</text>
+<text x="240" y="1680.5" font-family="DejaVu Sans, sans-serif" font-size="47" font-weight="700" fill="#ffffff">Cloudflare R2</text>
+<text x="240" y="1732.8" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#e0f6ee">Almacenamiento de objetos · bucket privado</text>
+<rect x="144" y="1820" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="172" y="1836.2" font-family="DejaVu Sans, sans-serif" font-size="32" font-weight="400" fill="#183c3b">Guarda las imágenes originales JPEG/PNG.</text>
+<rect x="144" y="1880.44" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="172" y="1896.7" font-family="DejaVu Sans, sans-serif" font-size="32" font-weight="400" fill="#183c3b">Bucket de la aplicación: retinazo-retinas.</text>
+<rect x="144" y="1940.88" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="172" y="1957.1" font-family="DejaVu Sans, sans-serif" font-size="32" font-weight="400" fill="#183c3b">API compatible con S3 y enlaces de lectura firmados.</text>
+<text x="144" y="2035.8" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="700" fill="#c56c13">Boto3 se ejecuta en FastAPI; R2 recibe las operaciones S3.</text>
+<rect x="140" y="2115" width="1240" height="174" rx="18" fill="#fff4e7" stroke="none" stroke-width="2"/>
+<text x="166" y="2154.7" font-family="DejaVu Sans, sans-serif" font-size="24" font-weight="700" fill="#087f70">POR QUÉ SE ELIGIÓ</text>
+<text x="166" y="2202.8" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#183c3b">Separa archivos y datos relacionales. Ofrece compatibilidad S3 y</text>
+<text x="166" y="2244.0" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#183c3b">almacenamiento sin publicar el bucket.</text>
+<rect x="2050" y="1619" width="1450" height="720" rx="30" fill="#e1ece8" stroke="none" stroke-width="2"/>
+<rect x="2050" y="1610" width="1450" height="720" rx="30" fill="#ffffff" stroke="#cbded8" stroke-width="3"/>
+<rect x="2050" y="1610" width="1450" height="160" rx="30" fill="#06635f" stroke="none" stroke-width="2"/>
+<rect x="2050" y="1720" width="1450" height="50" rx="0" fill="#06635f" stroke="none" stroke-width="2"/>
+<rect x="2080" y="1641" width="82" height="82" rx="19" fill="#ffffff" stroke="none" stroke-width="2"/>
+<text x="2095" y="1689.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#06635f">API</text>
+<text x="2190" y="1680.5" font-family="DejaVu Sans, sans-serif" font-size="47" font-weight="700" fill="#ffffff">FastAPI 0.162.0</text>
+<text x="2190" y="1732.8" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#e0f6ee">Alojado en Render · contenedor Docker · Python 3.12</text>
+<rect x="2094" y="1820" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2122" y="1834.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#183c3b">Valida la sesión de Supabase y el acceso a la evaluación.</text>
+<rect x="2094" y="1874.6" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2122" y="1889.2" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#183c3b">Comprueba las tres imágenes, su formato, tamaño e integridad.</text>
+<rect x="2094" y="1929.1999999999998" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2122" y="1943.8" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#183c3b">Guarda en R2 con Boto3 y confirma sus referencias en SQL.</text>
+<rect x="2094" y="1983.7999999999997" width="9" height="9" rx="4" fill="#087f70" stroke="none" stroke-width="2"/>
+<text x="2122" y="1998.4" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#183c3b">Entrega enlaces temporales para consultar las imágenes.</text>
+<text x="2094" y="2071.3" font-family="DejaVu Sans, sans-serif" font-size="26" font-weight="700" fill="#183c3b">Boto3 1.43.124 · Uvicorn 0.54.0 · HTTPX 0.28.1 · Pillow 12.3.0</text>
+<rect x="2090" y="2115" width="1370" height="174" rx="18" fill="#edf7f3" stroke="none" stroke-width="2"/>
+<text x="2116" y="2154.7" font-family="DejaVu Sans, sans-serif" font-size="24" font-weight="700" fill="#087f70">POR QUÉ SE ELIGIÓ</text>
+<text x="2116" y="2202.8" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#183c3b">Python facilita la futura integración del modelo. Render ejecuta la API en la nube sin</text>
+<text x="2116" y="2244.0" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="400" fill="#183c3b">depender de tu PC.</text>
+<polyline points="1420,675 2050,675" fill="none" stroke="#087f70" stroke-width="6" stroke-linejoin="round" />
+<polygon points="2050.0,675.0 2028.7,686.1 2028.7,663.9" fill="#087f70"/>
+<polygon points="1420.0,675.0 1441.3,663.9 1441.3,686.1" fill="#087f70"/>
+<rect x="1465" y="493" width="530" height="162" rx="14" fill="#f5f9f8" stroke="none" stroke-width="2"/>
+<text x="1480" y="532.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#087f70">supabase_flutter</text>
+<text x="1480" y="576.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#087f70">Cuentas, sesión y</text>
+<text x="1480" y="620.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#087f70">datos estructurados</text>
+<text x="1500" y="727.1" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#52716e">HTTPS · JWT · RLS</text>
+<polyline points="1420,1070 2050,1665" fill="none" stroke="#06635f" stroke-width="6" stroke-linejoin="round" />
+<polygon points="2050.0,1665.0 2026.9,1658.4 2042.1,1642.3" fill="#06635f"/>
+<polygon points="1420.0,1070.0 1443.1,1076.6 1427.9,1092.7" fill="#06635f"/>
+<rect x="1482" y="1260" width="535" height="162" rx="14" fill="#f5f9f8" stroke="none" stroke-width="2"/>
+<text x="1497" y="1299.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#06635f">HTTPS + JWT</text>
+<text x="1497" y="1343.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#06635f">Subida de 3 imágenes;</text>
+<text x="1497" y="1387.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#06635f">consulta de enlaces</text>
+<polyline points="2775,1610 2775,1150" fill="none" stroke="#087f70" stroke-width="6" stroke-linejoin="round" />
+<polygon points="2775.0,1150.0 2786.1,1171.3 2763.9,1171.3" fill="#087f70"/>
+<polygon points="2775.0,1610.0 2763.9,1588.7 2786.1,1588.7" fill="#087f70"/>
+<rect x="2810" y="1265" width="600" height="162" rx="14" fill="#f5f9f8" stroke="none" stroke-width="2"/>
+<text x="2825" y="1304.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#087f70">Verifica identidad</text>
+<text x="2825" y="1348.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#087f70">y permisos; confirma</text>
+<text x="2825" y="1392.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#087f70">metadatos de imágenes</text>
+<polyline points="2050,1935 1420,1935" fill="none" stroke="#c56c13" stroke-width="6" stroke-linejoin="round" />
+<polygon points="1420.0,1935.0 1441.3,1923.9 1441.3,1946.1" fill="#c56c13"/>
+<polygon points="2050.0,1935.0 2028.7,1946.1 2028.7,1923.9" fill="#c56c13"/>
+<rect x="1460" y="1745" width="530" height="162" rx="14" fill="#f5f9f8" stroke="none" stroke-width="2"/>
+<text x="1475" y="1784.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#c56c13">Boto3 · API S3</text>
+<text x="1475" y="1828.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#c56c13">Escritura y lectura</text>
+<text x="1475" y="1872.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#c56c13">de objetos privados</text>
+<polyline points="760,1610 760,1150" fill="none" stroke="#246b9e" stroke-width="6" stroke-linejoin="round" stroke-dasharray="15 12"/>
+<polygon points="760.0,1150.0 771.1,1171.3 748.9,1171.3" fill="#246b9e"/>
+<rect x="139" y="1255" width="575" height="162" rx="14" fill="#f5f9f8" stroke="none" stroke-width="2"/>
+<text x="154" y="1294.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#246b9e">Lectura directa por HTTPS</text>
+<text x="154" y="1338.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#246b9e">con URL temporal firmada</text>
+<text x="154" y="1382.6" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#246b9e">generada por FastAPI</text>
+<rect x="100" y="2390" width="3400" height="150" rx="22" fill="#e7f1ed" stroke="none" stroke-width="2"/>
+<text x="135" y="2440.4" font-family="DejaVu Sans, sans-serif" font-size="31" font-weight="700" fill="#06635f">Estado: usuarios, pacientes y almacenamiento implementados. Integración del modelo de IA pendiente.</text>
+<text x="135" y="2488.1" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#52716e">Versiones del proyecto verificadas al 12/11/2026. Supabase, Auth, R2 y Render son servicios gestionados sin una versión única.</text>
+</svg>
