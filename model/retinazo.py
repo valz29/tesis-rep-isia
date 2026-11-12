@@ -91,10 +91,20 @@ def referable_metrics(y, pred, probs=None):
     return result
 
 
+class PadToSquare:
+    """Ajusta la imagen a size x size con relleno negro. Clase (no lambda) para poder usar workers en Windows."""
+
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, image):
+        return ImageOps.pad(image, (self.size, self.size), method=Image.Resampling.BILINEAR, color=(0, 0, 0))
+
+
 def transform(size, training=False):
     from torchvision import transforms as T
     # Conservar todo el encuadre y la proporcion; no aplicar recorte central.
-    operations = [T.Lambda(lambda image: ImageOps.pad(image, (size, size), method=Image.Resampling.BILINEAR, color=(0, 0, 0)))]
+    operations = [PadToSquare(size)]
     if training:
         operations += [T.RandomHorizontalFlip(), T.RandomRotation(10), T.ColorJitter(brightness=0.1, contrast=0.1)]
     return T.Compose(operations + [T.ToTensor(), T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
@@ -122,6 +132,11 @@ def model(pretrained):
     network = efficientnet_b0(weights=EfficientNet_B0_Weights.IMAGENET1K_V1 if pretrained else None)
     network.classifier[1] = torch.nn.Linear(network.classifier[1].in_features, 5)
     return network
+
+
+def loader_options(args):
+    # workers=0 (por defecto) es lo mas simple en Windows; --workers 2-4 acelera la lectura de PNG grandes.
+    return {"num_workers": args.workers, "persistent_workers": args.workers > 0}
 
 
 def device_for(args):
@@ -187,9 +202,8 @@ def train(args):
         (args.run / source.name).write_bytes(source.read_bytes())
     from torch.utils.data import DataLoader
     generator = torch.Generator().manual_seed(args.seed)
-    # workers=0 facilita el primer entrenamiento en Windows.
-    train_loader = DataLoader(Images(tr, args.size, True), batch_size=args.batch_size, shuffle=True, num_workers=0, generator=generator)
-    val_loader = DataLoader(Images(va, args.size), batch_size=args.batch_size, num_workers=0)
+    train_loader = DataLoader(Images(tr, args.size, True), batch_size=args.batch_size, shuffle=True, generator=generator, **loader_options(args))
+    val_loader = DataLoader(Images(va, args.size), batch_size=args.batch_size, **loader_options(args))
     network = model(not args.smoke).to(device)
     counts = np.bincount(tr.diagnosis.to_numpy(), minlength=5)
     weights = torch.tensor(len(tr) / (5 * counts), dtype=torch.float32, device=device)
@@ -243,7 +257,7 @@ def evaluate(args):
     import torch
     network, size, device = load(args)
     frame = pd.read_csv(args.run / (args.partition + ".csv"))
-    result, _, pred, probs = run_epoch(network, torch.utils.data.DataLoader(Images(frame, size), batch_size=args.batch_size, num_workers=0), device)
+    result, _, pred, probs = run_epoch(network, torch.utils.data.DataLoader(Images(frame, size), batch_size=args.batch_size, **loader_options(args)), device)
     save_json(args.run / (args.partition + "_metrics.json"), result)
     frame["prediction"] = pred
     for degree in LABELS:
@@ -271,6 +285,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42, help="Semilla de particiones (prepare) y de entrenamiento (train). Las particiones deben ser las mismas para comparar modelos.")
     parser.add_argument("--size", type=int, default=320)
     parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--workers", type=int, default=0, help="Procesos para leer imagenes (0 = proceso principal).")
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--patience", type=int, default=5)
