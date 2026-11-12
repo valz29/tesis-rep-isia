@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:rd_app/core/theme/app_theme.dart';
 import 'package:rd_app/features/patients/domain/entities/patient.dart';
 
 import '../../domain/entities/evaluation_draft.dart';
 import '../formatters/evaluation_labels.dart';
-
-import 'package:rd_app/core/theme/app_theme.dart';
 
 class PatientSummary extends StatelessWidget {
   final Patient paciente;

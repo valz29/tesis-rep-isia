@@ -33,6 +33,8 @@ void main() {
             if (target.contains('/data/') ||
                 target.startsWith('package:image_picker/') ||
                 target.startsWith('package:http/') ||
+                target.startsWith('package:supabase_flutter/') ||
+                target.startsWith('package:app_links/') ||
                 target == 'dart:io') {
               violations.add('${file.path} -> $target');
             }

@@ -1,10 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:app_links/app_links.dart';
 import 'package:crypto/crypto.dart';
-
-import 'dart:convert';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';

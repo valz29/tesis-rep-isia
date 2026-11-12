@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rd_app/app/config/app_config.dart';
 import 'package:rd_app/app/auth_link_coordinator.dart';
+import 'package:rd_app/app/config/app_config.dart';
 
 void main() {
   test(

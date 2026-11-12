@@ -1,10 +1,9 @@
-import '../formatters/evaluation_labels.dart';
-
-import 'package:rd_app/app/router/app_routes.dart';
 import 'package:flutter/material.dart';
-
+import 'package:rd_app/app/router/app_routes.dart';
 import 'package:rd_app/app/session_controller.dart';
 import 'package:rd_app/shared/widgets/page_body.dart';
+
+import '../formatters/evaluation_labels.dart';
 
 class HistoryScreen extends StatelessWidget {
   final SessionController sesion;

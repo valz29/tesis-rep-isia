@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'session_controller.dart';
-import '../features/auth/presentation/pages/welcome_screen.dart';
 import '../features/auth/presentation/pages/reset_password_screen.dart';
+import '../features/auth/presentation/pages/welcome_screen.dart';
 import '../features/home/presentation/pages/home_screen.dart';
+import 'session_controller.dart';
 
 /// Replaces the complete navigation stack when the authenticated identity changes.
 class AuthGate extends StatefulWidget {

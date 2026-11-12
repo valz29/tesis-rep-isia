@@ -1,9 +1,8 @@
-import 'package:rd_app/app/router/app_routes.dart';
 import 'package:flutter/material.dart';
-
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
+import 'package:rd_app/app/router/app_routes.dart';
 import 'package:rd_app/app/session_controller.dart';
 import 'package:rd_app/core/theme/app_theme.dart';
+import 'package:rd_app/features/patients/domain/entities/patient.dart';
 import 'package:rd_app/shared/widgets/page_body.dart';
 
 class PatientSelectionScreen extends StatefulWidget {

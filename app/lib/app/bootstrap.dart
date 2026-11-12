@@ -1,13 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme/app_theme.dart';
 import 'app.dart';
+import 'auth_link_coordinator.dart';
 import 'config/app_config.dart';
 import 'dependencies.dart';
-import 'auth_link_coordinator.dart';
-
-import 'dart:async';
 
 class AppBootstrap extends StatefulWidget {
   const AppBootstrap({super.key});

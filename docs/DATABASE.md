@@ -166,4 +166,6 @@ Las pruebas usan un contenedor PostgreSQL 16 temporal y un sustituto mínimo de 
 
 ## Ampliación administrativa (Retinazo 1.1.0)
 
-La tercera migración añade `profiles.is_active` y `admin_audit_log` (actor UUID, acción, registro afectado UUID y fecha). La auditoría preserva sus IDs aunque se elimine una cuenta vacía; no copia información clínica. El administrador ahora gestiona usuarios y expedientes, crea evaluaciones con su propia identidad y reasigna responsables sin cambiar autores históricos. Se conserva la separación entre profesionales y la obligatoriedad de confirmar el correo. La matriz de permisos inicial de este documento queda actualizada por [ADMINISTRATION.md](ADMINISTRATION.md). Estas adiciones no introducen grupos repetidos ni dependencias transitivas en las tablas clínicas.
+La tercera migración añadió `profiles.is_active`, funciones administrativas y `admin_audit_log` (actor UUID, acción, registro afectado UUID y fecha). La quinta migración restringe la responsabilidad de pacientes y la autoría de nuevas evaluaciones a profesionales activos con correo confirmado. El administrador gestiona expedientes y cuentas, reasigna responsables y desactiva/reactiva pacientes, conservando autores históricos. El alcance vigente está en [ADMINISTRATION.md](ADMINISTRATION.md).
+
+La auditoría conserva sus IDs aunque se elimine una cuenta vacía y no copia información clínica. Estas adiciones no introducen grupos repetidos ni dependencias transitivas en las tablas clínicas.

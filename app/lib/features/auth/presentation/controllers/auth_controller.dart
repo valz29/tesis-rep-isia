@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/errors/app_failure.dart';
-import '../../domain/entities/staff_member.dart';
 import '../../domain/entities/auth_session_event.dart';
+import '../../domain/entities/staff_member.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/usecases/register_staff.dart';
 import '../../domain/usecases/sign_in.dart';
 import '../../domain/usecases/sign_out.dart';
-import '../../domain/usecases/register_staff.dart';
 
 class AuthController extends ChangeNotifier {
   final SignIn _signIn;

@@ -1,7 +1,7 @@
 import '../../../../core/errors/app_failure.dart';
+import 'detection_result.dart';
 import 'evaluation_draft.dart';
 import 'evaluation_image.dart';
-import 'detection_result.dart';
 import 'evaluation_image_metadata.dart';
 
 enum EvaluationStatus { draft, pendingAnalysis, notGradable, completed }

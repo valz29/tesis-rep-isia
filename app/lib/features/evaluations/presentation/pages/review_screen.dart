@@ -1,15 +1,13 @@
+import 'package:flutter/material.dart';
+import 'package:rd_app/app/router/app_routes.dart';
+import 'package:rd_app/app/session_controller.dart';
+import 'package:rd_app/features/evaluations/presentation/widgets/patient_summary.dart';
+import 'package:rd_app/features/patients/domain/entities/patient.dart';
+import 'package:rd_app/shared/widgets/page_body.dart';
+
 import '../../domain/entities/evaluation_draft.dart';
 import '../../domain/entities/evaluation_image.dart';
 import '../formatters/evaluation_labels.dart';
-
-import 'package:rd_app/app/router/app_routes.dart';
-
-import 'package:flutter/material.dart';
-
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
-import 'package:rd_app/app/session_controller.dart';
-import 'package:rd_app/shared/widgets/page_body.dart';
-import 'package:rd_app/features/evaluations/presentation/widgets/patient_summary.dart';
 
 class ReviewScreen extends StatefulWidget {
   final Patient paciente;

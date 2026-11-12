@@ -18,4 +18,6 @@ La salida del sistema es apoyo al tamizaje, no un diagnóstico.
 | [`docs/ADMINISTRATION.md`](docs/ADMINISTRATION.md) | Roles, panel administrativo y registro con confirmación |
 | [`scripts/`](scripts/) | Pruebas de base de datos y comprobación remota con imágenes sintéticas |
 
-La integración de Cloudflare R2 y Render se explica en [docs/R2_STORAGE.md](docs/R2_STORAGE.md). La cuarta migración está aplicada al proyecto alojado. La API está disponible en [retinazo-images.onrender.com/health](https://retinazo-images.onrender.com/health); el análisis mediante modelo sigue pendiente.
+La integración de Cloudflare R2 y Render se explica en [docs/R2_STORAGE.md](docs/R2_STORAGE.md). El esquema incluye cinco migraciones. La API está disponible en [retinazo-images.onrender.com/health](https://retinazo-images.onrender.com/health); el análisis mediante modelo sigue pendiente.
+
+La organización vigente y los criterios de limpieza están en [docs/CODE_ORGANIZATION.md](docs/CODE_ORGANIZATION.md); el detalle de Flutter está en [app/docs/ARCHITECTURE.md](app/docs/ARCHITECTURE.md).

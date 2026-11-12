@@ -2,8 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/data/supabase_failures.dart';
 import '../../../../core/errors/app_failure.dart';
-import '../../domain/entities/staff_member.dart';
 import '../../domain/entities/auth_session_event.dart';
+import '../../domain/entities/staff_member.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class SupabaseAuthRepository implements AuthRepository {

@@ -12,7 +12,7 @@ FastAPI está publicado en Render y guarda los originales en el bucket R2. Al gu
 
 Google está implementado como opción de acceso, desactivada hasta configurar el proveedor OAuth. El correo integrado de Supabase solo entrega a miembros del equipo y tiene un límite actual de dos mensajes por hora; para usuarios externos hace falta SMTP propio.
 
-Ver [administración y registro confirmado](../docs/ADMINISTRATION.md) para el alcance de Retinazo 1.1.0, las restricciones, pruebas y funciones por rol.
+Ver [administración y registro confirmado](../docs/ADMINISTRATION.md) para el alcance de Retinazo 1.3.0, las restricciones, pruebas y funciones por rol.
 
 Los pacientes solo se asignan a profesionales activos con correo confirmado. El administrador debe seleccionar un profesional al registrarlos y puede desactivar/reactivar sus expedientes con motivo y auditoría. Los pacientes desactivados conservan su historial, pero no admiten nuevas evaluaciones o cargas. No se ofrece borrado de pacientes desde la app.
 
@@ -33,7 +33,7 @@ lib/
 
 `main.dart` inicia `AppBootstrap`, que valida la configuración y crea `AppDependencies.remote`. Los contratos del dominio no dependen de Supabase. Los repositorios en memoria se conservan para pruebas con inyección explícita; el arranque de producción nunca cambia a ellos si falla la conexión. Cerrar sesión limpia tokens y caché local, conservando los registros remotos.
 
-Consulta [arquitectura](docs/ARCHITECTURE.md), [base de datos](../docs/DATABASE.md) y [activación del esquema](../supabase/README.md).
+Consulta [organización del código](../docs/CODE_ORGANIZATION.md), [arquitectura](docs/ARCHITECTURE.md), [base de datos](../docs/DATABASE.md) y [activación del esquema](../supabase/README.md).
 
 ## Ejecutar y verificar
 

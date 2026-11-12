@@ -1,10 +1,8 @@
-import '../validators/input_validators.dart';
-
-import 'package:rd_app/app/app_scope.dart';
-
 import 'package:flutter/material.dart';
-
+import 'package:rd_app/app/app_scope.dart';
 import 'package:rd_app/core/theme/app_theme.dart';
+
+import '../validators/input_validators.dart';
 
 class RecoveryScreen extends StatefulWidget {
   const RecoveryScreen({super.key});

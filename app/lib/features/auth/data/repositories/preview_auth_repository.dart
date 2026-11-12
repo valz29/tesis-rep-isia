@@ -1,5 +1,5 @@
-import '../../domain/entities/staff_member.dart';
 import '../../domain/entities/auth_session_event.dart';
+import '../../domain/entities/staff_member.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 /// Used only by explicitly injected in-memory dependencies and tests.

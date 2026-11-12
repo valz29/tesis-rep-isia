@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rd_app/core/errors/app_failure.dart';
 import 'package:rd_app/features/auth/data/repositories/supabase_auth_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../support/auth_storage.dart';
 

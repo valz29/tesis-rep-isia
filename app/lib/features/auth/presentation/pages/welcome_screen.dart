@@ -1,8 +1,7 @@
-import 'package:rd_app/app/router/app_routes.dart';
 import 'package:flutter/material.dart';
-
-import 'package:rd_app/shared/widgets/retinazo_logo.dart';
+import 'package:rd_app/app/router/app_routes.dart';
 import 'package:rd_app/core/theme/app_theme.dart';
+import 'package:rd_app/shared/widgets/retinazo_logo.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});

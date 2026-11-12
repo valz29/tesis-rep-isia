@@ -6,9 +6,9 @@ import 'package:rd_app/features/admin/domain/entities/admin_account.dart';
 import 'package:rd_app/features/admin/presentation/pages/admin_users_screen.dart';
 import 'package:rd_app/features/auth/data/repositories/preview_auth_repository.dart';
 import 'package:rd_app/features/auth/domain/entities/staff_member.dart';
-import 'package:rd_app/features/patients/data/repositories/in_memory_patient_repository.dart';
 import 'package:rd_app/features/evaluations/data/repositories/in_memory_evaluation_repository.dart';
 import 'package:rd_app/features/home/presentation/pages/home_screen.dart';
+import 'package:rd_app/features/patients/data/repositories/in_memory_patient_repository.dart';
 
 import '../../support/fixtures.dart';
 

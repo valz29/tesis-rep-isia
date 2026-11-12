@@ -1,34 +1,33 @@
-import '../../features/admin/presentation/pages/admin_users_screen.dart';
-import '../../features/admin/presentation/pages/admin_audit_screen.dart';
-import '../../features/admin/presentation/pages/admin_reassign_screen.dart';
-import '../../features/admin/presentation/pages/admin_evaluation_screen.dart';
-
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import '../app_scope.dart';
-import '../../features/patients/domain/entities/patient.dart';
+import '../../features/admin/presentation/pages/admin_audit_screen.dart';
+import '../../features/admin/presentation/pages/admin_evaluation_screen.dart';
+import '../../features/admin/presentation/pages/admin_reassign_screen.dart';
+import '../../features/admin/presentation/pages/admin_users_screen.dart';
+import '../../features/auth/presentation/pages/login_screen.dart';
+import '../../features/auth/presentation/pages/recovery_screen.dart';
+import '../../features/auth/presentation/pages/register_screen.dart';
+import '../../features/auth/presentation/pages/welcome_screen.dart';
 import '../../features/evaluations/domain/entities/evaluation.dart';
 import '../../features/evaluations/domain/entities/evaluation_draft.dart';
 import '../../features/evaluations/domain/entities/evaluation_image.dart';
-import '../../features/auth/presentation/pages/welcome_screen.dart';
-import '../../features/auth/presentation/pages/login_screen.dart';
-import '../../features/auth/presentation/pages/register_screen.dart';
-import '../../features/auth/presentation/pages/recovery_screen.dart';
-import '../../features/home/presentation/pages/home_screen.dart';
-import '../../features/patients/presentation/pages/patient_selection_screen.dart';
-import '../../features/patients/presentation/pages/patient_form_screen.dart';
-import '../../features/patients/presentation/pages/patient_detail_screen.dart';
-import '../../features/evaluations/presentation/pages/eye_selection_screen.dart';
 import '../../features/evaluations/presentation/pages/capture_screen.dart';
-import '../../features/evaluations/presentation/pages/review_screen.dart';
-import '../../features/evaluations/presentation/pages/single_image_preview_screen.dart';
+import '../../features/evaluations/presentation/pages/eye_selection_screen.dart';
+import '../../features/evaluations/presentation/pages/history_screen.dart';
+import '../../features/evaluations/presentation/pages/image_viewer_screen.dart';
 import '../../features/evaluations/presentation/pages/preparation_screen.dart';
 import '../../features/evaluations/presentation/pages/result_screen.dart';
-import '../../features/evaluations/presentation/pages/history_screen.dart';
+import '../../features/evaluations/presentation/pages/review_screen.dart';
+import '../../features/evaluations/presentation/pages/single_image_preview_screen.dart';
 import '../../features/evaluations/presentation/pages/statistics_screen.dart';
-import '../../features/evaluations/presentation/pages/image_viewer_screen.dart';
+import '../../features/home/presentation/pages/home_screen.dart';
+import '../../features/patients/domain/entities/patient.dart';
+import '../../features/patients/presentation/pages/patient_detail_screen.dart';
+import '../../features/patients/presentation/pages/patient_form_screen.dart';
+import '../../features/patients/presentation/pages/patient_selection_screen.dart';
+import '../app_scope.dart';
 
 /// Route construction is centralized; pages don't instantiate other features.
 abstract final class AppRoutes {

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:rd_app/core/errors/app_failure.dart';
-import 'package:rd_app/features/evaluations/data/repositories/image_api_client.dart';
+import 'package:rd_app/features/evaluations/data/datasources/image_api_client.dart';
 import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
 import 'package:rd_app/features/evaluations/domain/entities/evaluation_image_metadata.dart';
 

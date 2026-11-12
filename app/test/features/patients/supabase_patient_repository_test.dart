@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rd_app/features/patients/data/repositories/supabase_patient_repository.dart';
 import 'package:rd_app/features/patients/domain/entities/patient.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   test('Patient adapter writes editable fields; clearing session never deletes remote data', () async {
@@ -68,5 +68,16 @@ void main() {
     expect(writes.every((body) => !body.containsKey('is_active')), isTrue);
     expect(writes.last.containsKey('id'), isFalse);
     expect(methods, isNot(contains('DELETE')));
+
+    // Archived legacy records may have no responsible professional or join row.
+    row['owner_id'] = null;
+    row['profiles'] = null;
+    row['is_active'] = false;
+    row['deactivation_reason'] = 'Expediente archivado';
+    final archived = (await repository.list()).single;
+    expect(archived.ownerId, isNull);
+    expect(archived.ownerName, isNull);
+    expect(archived.isActive, isFalse);
+    expect(archived.deactivationReason, 'Expediente archivado');
   });
 }

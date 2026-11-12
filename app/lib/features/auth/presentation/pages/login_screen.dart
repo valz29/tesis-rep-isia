@@ -1,12 +1,10 @@
-import 'package:rd_app/app/router/app_routes.dart';
 import 'package:flutter/material.dart';
-
 import 'package:rd_app/app/app_scope.dart';
-
-import '../validators/input_validators.dart';
-
+import 'package:rd_app/app/router/app_routes.dart';
 import 'package:rd_app/core/theme/app_theme.dart';
 import 'package:rd_app/shared/widgets/page_body.dart';
+
+import '../validators/input_validators.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? correoInicial;

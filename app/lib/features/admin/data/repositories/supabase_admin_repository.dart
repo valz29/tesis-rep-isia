@@ -1,10 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/data/supabase_failures.dart';
-import '../../domain/entities/admin_account.dart';
-import '../../domain/repositories/admin_repository.dart';
 import '../../../auth/domain/entities/staff_member.dart';
 import '../../../evaluations/domain/entities/evaluation_draft.dart';
+import '../../domain/entities/admin_account.dart';
+import '../../domain/repositories/admin_repository.dart';
+import '../models/admin_mapper.dart';
 
 class SupabaseAdminRepository implements AdminRepository {
   final SupabaseClient client;
@@ -22,15 +23,8 @@ class SupabaseAdminRepository implements AdminRepository {
 
   @override
   Future<AdminOverview> overview() => _guard(() async {
-    final r = await client.rpc('admin_overview') as Map<String, dynamic>;
-    return AdminOverview(
-      users: (r['users'] as num).toInt(),
-      unconfirmed: (r['unconfirmed'] as num).toInt(),
-      inactive: (r['inactive'] as num).toInt(),
-      patients: (r['patients'] as num).toInt(),
-      evaluations: (r['evaluations'] as num).toInt(),
-      drafts: (r['drafts'] as num).toInt(),
-    );
+    final row = await client.rpc('admin_overview') as Map<String, dynamic>;
+    return AdminMapper.overview(row);
   });
   @override
   Future<List<AdminAccount>> users(String query, int offset) =>
@@ -40,23 +34,8 @@ class SupabaseAdminRepository implements AdminRepository {
           params: {'query_input': query, 'offset_input': offset},
         ) as List;
         return rows
-            .map(
-              (r) => AdminAccount(
-                id: r['id'],
-                name: r['full_name'] ?? 'Sin nombre',
-                email: r['email'] ?? '',
-                role: r['role'] == 'admin'
-                    ? AccountRole.admin
-                    : AccountRole.professional,
-                active: r['is_active'],
-                confirmed: r['email_confirmed_at'] != null,
-                createdAt: DateTime.parse(r['created_at']).toLocal(),
-                lastSignIn: r['last_sign_in_at'] == null
-                    ? null
-                    : DateTime.parse(r['last_sign_in_at']).toLocal(),
-                patientCount: (r['patient_count'] as num).toInt(),
-              ),
-            )
+            .cast<Map<String, dynamic>>()
+            .map(AdminMapper.account)
             .toList();
       });
   @override
@@ -106,20 +85,7 @@ class SupabaseAdminRepository implements AdminRepository {
       'admin_eligible_professionals',
       params: {'query_input': query},
     ) as List;
-    return rows
-        .map(
-          (r) => AdminAccount(
-            id: r['id'],
-            name: r['full_name'] ?? 'Sin nombre',
-            email: r['email'] ?? '',
-            role: AccountRole.professional,
-            active: r['is_active'],
-            confirmed: r['email_confirmed_at'] != null,
-            createdAt: DateTime.parse(r['created_at']).toLocal(),
-            patientCount: (r['patient_count'] as num).toInt(),
-          ),
-        )
-        .toList();
+    return rows.cast<Map<String, dynamic>>().map(AdminMapper.account).toList();
   });
   @override
   Future<void> updateEvaluation(
@@ -144,15 +110,6 @@ class SupabaseAdminRepository implements AdminRepository {
         .order('created_at', ascending: false)
         .order('id', ascending: false)
         .range(offset, offset + 49);
-    return rows
-        .map(
-          (r) => AdminAuditEntry(
-            r['actor_id'],
-            r['target_id'],
-            r['action'],
-            DateTime.parse(r['created_at']).toLocal(),
-          ),
-        )
-        .toList();
+    return rows.map(AdminMapper.auditEntry).toList();
   });
 }

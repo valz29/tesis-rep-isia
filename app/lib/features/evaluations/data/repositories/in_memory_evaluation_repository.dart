@@ -1,5 +1,5 @@
-import '../../domain/entities/evaluation_image.dart';
 import '../../domain/entities/evaluation.dart';
+import '../../domain/entities/evaluation_image.dart';
 import '../../domain/repositories/evaluation_repository.dart';
 
 class InMemoryEvaluationRepository implements EvaluationRepository {

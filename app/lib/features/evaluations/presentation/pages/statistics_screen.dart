@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-
-import '../../domain/entities/evaluation_draft.dart';
-
 import 'package:rd_app/app/session_controller.dart';
 import 'package:rd_app/shared/widgets/page_body.dart';
+
+import '../../domain/entities/evaluation_draft.dart';
 
 class StatisticsScreen extends StatelessWidget {
   final SessionController sesion;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
-import 'dependencies.dart';
 import 'app_scope.dart';
 import 'auth_gate.dart';
+import 'dependencies.dart';
 
 class RetinazoApp extends StatefulWidget {
   /// Injected dependencies are owned by the caller; defaults belong to the app.

@@ -6,11 +6,11 @@ import 'package:rd_app/app/app_scope.dart';
 import 'package:rd_app/app/dependencies.dart';
 import 'package:rd_app/core/theme/app_theme.dart';
 import 'package:rd_app/features/auth/data/repositories/preview_auth_repository.dart';
-import 'package:rd_app/features/patients/data/repositories/in_memory_patient_repository.dart';
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
 import 'package:rd_app/features/evaluations/data/repositories/in_memory_evaluation_repository.dart';
 import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
 import 'package:rd_app/features/evaluations/domain/repositories/image_acquisition_repository.dart';
+import 'package:rd_app/features/patients/data/repositories/in_memory_patient_repository.dart';
+import 'package:rd_app/features/patients/domain/entities/patient.dart';
 
 final patient = Patient(
   id: 'patient-1',

@@ -1,5 +1,5 @@
-import '../entities/staff_member.dart';
 import '../entities/auth_session_event.dart';
+import '../entities/staff_member.dart';
 
 abstract interface class AuthRepository {
   Future<StaffMember> signIn(String email, String password);

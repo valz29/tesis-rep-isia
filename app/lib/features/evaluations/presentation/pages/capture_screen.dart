@@ -1,17 +1,15 @@
-import '../../domain/entities/evaluation_draft.dart';
-import '../../domain/repositories/image_acquisition_repository.dart';
-import '../controllers/capture_controller.dart';
-
-import 'package:rd_app/app/router/app_routes.dart';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
+import 'package:rd_app/app/router/app_routes.dart';
 import 'package:rd_app/app/session_controller.dart';
 import 'package:rd_app/core/theme/app_theme.dart';
 import 'package:rd_app/features/evaluations/presentation/widgets/patient_summary.dart';
+import 'package:rd_app/features/patients/domain/entities/patient.dart';
 import 'package:rd_app/shared/widgets/page_body.dart';
+
+import '../../domain/entities/evaluation_draft.dart';
+import '../../domain/repositories/image_acquisition_repository.dart';
+import '../controllers/capture_controller.dart';
 
 class CaptureScreen extends StatefulWidget {
   final Patient paciente;
