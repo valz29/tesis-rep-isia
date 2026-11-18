@@ -62,3 +62,12 @@ app.*.map.json
 !/macos/Runner/Assets.xcassets/**
 !/web/favicon.png
 !/web/icons/*.png
+
+# Per-environment public app connection settings (no passwords or server keys)
+/config/*.local.json
+
+# Kotlin compiler session cache
+/android/.kotlin/
+
+!/lib/core/data/
+!/lib/core/data/**

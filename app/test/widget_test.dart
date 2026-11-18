@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rd_app/app/app.dart';
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_draft.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/capture_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/eye_selection_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/review_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/single_image_preview_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/history_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/result_screen.dart';
-import 'package:rd_app/features/home/presentation/pages/home_screen.dart';
-import 'package:rd_app/features/patients/presentation/pages/patient_selection_screen.dart';
+import 'package:rd_app/features/auth/domain/staff_member.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_draft.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image.dart';
+import 'package:rd_app/features/evaluations/presentation/capture_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/eye_selection_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/history_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/result_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/review_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/single_image_preview_screen.dart';
+import 'package:rd_app/features/home/presentation/home_screen.dart';
+import 'package:rd_app/features/patients/domain/patient.dart';
+import 'package:rd_app/features/patients/presentation/patient_selection_screen.dart';
 
 import 'support/fixtures.dart';
 
@@ -36,9 +37,12 @@ void main() {
   testWidgets('Welcome, registration validation, login and menu navigation', (
     tester,
   ) async {
-    await tester.pumpWidget(const RetinazoApp());
+    final dependencies = memoryDependencies();
+    addTearDown(dependencies.dispose);
+    await tester.pumpWidget(RetinazoApp(dependencies: dependencies));
+    await tester.pumpAndSettle();
     expect(find.text('Retinazo'), findsOneWidget);
-    await tapVisible(tester, find.text('Registrarse'));
+    await tapVisible(tester, find.text('Crear cuenta'));
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'Personal de prueba',
@@ -47,28 +51,31 @@ void main() {
       find.byType(TextFormField).at(1),
       'demo@example.com',
     );
-    await tester.enterText(find.byType(TextFormField).at(2), 'demo');
+    await tester.enterText(find.byType(TextFormField).at(2), 'demo12345');
     await tester.enterText(find.byType(TextFormField).at(3), 'otro');
     await tapVisible(tester, find.widgetWithText(FilledButton, 'Registrarse'));
     expect(find.text('Las contraseñas deben coincidir'), findsOneWidget);
-    await tester.enterText(find.byType(TextFormField).at(3), 'demo');
+    await tester.enterText(find.byType(TextFormField).at(3), 'demo12345');
     await tapVisible(tester, find.widgetWithText(FilledButton, 'Registrarse'));
-    expect(find.text('demo@example.com'), findsOneWidget);
-    await tester.enterText(find.byType(TextFormField).at(0), '');
+    expect(
+      find.text('Confirma tu correo para activar tu cuenta.'),
+      findsOneWidget,
+    );
+    expect(find.byType(HomeScreen), findsNothing);
     await tapVisible(
       tester,
-      find.widgetWithText(FilledButton, 'Iniciar sesión'),
+      find.text('Ya confirmé mi correo · Iniciar sesión'),
     );
+    expect(find.text('demo@example.com'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).at(0), '');
+    await tapVisible(tester, find.widgetWithText(FilledButton, 'Ingresar'));
     expect(find.text('Ingresa un correo electrónico válido'), findsOneWidget);
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'demo@example.com',
     );
-    await tester.enterText(find.byType(TextFormField).at(1), 'demo');
-    await tapVisible(
-      tester,
-      find.widgetWithText(FilledButton, 'Iniciar sesión'),
-    );
+    await tester.enterText(find.byType(TextFormField).at(1), 'demo12345');
+    await tapVisible(tester, find.widgetWithText(FilledButton, 'Ingresar'));
     expect(find.byType(HomeScreen), findsOneWidget);
     await tapVisible(tester, find.byKey(const Key('menu-0')));
     expect(find.text('Todavía no hay pacientes'), findsOneWidget);
@@ -155,6 +162,61 @@ void main() {
     final fresh = await createDependencies();
     expect(fresh.session.patients.patients, isEmpty);
     fresh.dispose();
+  });
+
+  testWidgets('Patient edits preserve identity and update the details page', (
+    tester,
+  ) async {
+    final dependencies = await createDependencies(seedPatient: true);
+    await tester.pumpWidget(
+      harness(
+        dependencies,
+        PatientSelectionScreen(sesion: dependencies.session),
+      ),
+    );
+    await tapVisible(tester, find.text(patient.nombreCompleto));
+    await tapVisible(tester, find.text('Editar paciente'));
+    await tester.enterText(
+      find.byKey(const Key('patient-name')),
+      'Nombre actualizado',
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.widgetWithText(FilledButton, 'Guardar'));
+    expect(dependencies.session.patients.patients.single.id, patient.id);
+    expect(
+      dependencies.session.patients.patients.single.nombres,
+      'Nombre actualizado',
+    );
+    expect(
+      find.text('Nombre actualizado ${patient.apellidos}'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Admin manages patients without authoring evaluations', (
+    tester,
+  ) async {
+    final dependencies = await createDependencies(seedPatient: true);
+    dependencies.session.auth.personal = const StaffMember(
+      id: 'admin-1',
+      usuario: 'admin@example.invalid',
+      nombre: 'Admin',
+      role: AccountRole.admin,
+    );
+    await tester.pumpWidget(
+      harness(
+        dependencies,
+        PatientSelectionScreen(sesion: dependencies.session),
+      ),
+    );
+    expect(find.byTooltip('Registrar paciente'), findsOneWidget);
+    await tapVisible(tester, find.text(patient.nombreCompleto));
+    expect(find.text('Editar paciente'), findsOneWidget);
+    expect(find.text('Nueva evaluación'), findsNothing);
+    expect(find.text('Cambiar responsable'), findsOneWidget);
+    expect(find.text('Profesional responsable'), findsOneWidget);
+    expect(find.text('Desactivar paciente'), findsOneWidget);
   });
 
   testWidgets('Menu supports a narrow screen and enlarged text', (
@@ -264,14 +326,18 @@ void main() {
       await tapVisible(tester, find.widgetWithText(FilledButton, 'Guardar'));
       expect(session.evaluations.evaluations.length, 1);
       expect(session.evaluations.evaluations.single.imagenes.length, 3);
+      expect(find.byType(HomeScreen), findsOneWidget);
+      expect(find.byType(ResultScreen), findsNothing);
       expect(
-        tester
-            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Guardado'))
-            .onPressed,
-        isNull,
+        find.text('Evaluación e imágenes guardadas correctamente.'),
+        findsOneWidget,
       );
       await tester.pumpWidget(
-        harness(dependencies, HistoryScreen(sesion: session)),
+        harness(
+          dependencies,
+          HistoryScreen(sesion: session),
+          key: const ValueKey('history-after-save'),
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.text(patient.nombreCompleto), findsOneWidget);

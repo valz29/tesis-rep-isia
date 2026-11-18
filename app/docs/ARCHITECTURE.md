@@ -1,180 +1,165 @@
 # Arquitectura de Retinazo
 
-Estado: reorganización de la aplicación Flutter, 2 de noviembre de 2026.
+Estado del código revisado el 17 de noviembre de 2026. Esta descripción corresponde a la estructura vigente; no confirma un nuevo despliegue ni validación en teléfono físico.
 
-Esta arquitectura conserva el recorrido y la identidad visual del aplicativo. Separa responsabilidades para continuar el desarrollo. La autenticación sigue siendo de prueba, los datos permanecen en memoria y las evaluaciones quedan pendientes de análisis. No se implementaron servidor, base de datos, carga de archivos ni inferencia.
-
-El documento `CONTEXTO_TESIS.md` proporcionado por el usuario se utiliza como contexto del sistema. Sus tecnologías propuestas y sus decisiones pendientes no se consideran implementadas por esta reorganización.
-
-## Organización del código
-
-Se usa Clean Architecture organizada por funcionalidad. Cada módulo concentra sus propias capas, en lugar de reunir todas las pantallas o todos los servicios en una sola carpeta.
+## Organización por funcionalidad y capas
 
 ```text
 lib/
-├── main.dart                      # Punto de entrada
-├── app/
-│   ├── app.dart                   # MaterialApp y ciclo de vida
-│   ├── dependencies.dart          # Construcción e inyección de dependencias
-│   ├── app_scope.dart             # Acceso a la sesión por encima del Navigator
-│   ├── session_controller.dart    # Coordinación de sesión y cierre
-│   └── router/app_routes.dart     # Navegación centralizada
-├── core/
-│   ├── errors/app_failure.dart     # Errores esperados, sin dependencia de Flutter
-│   └── theme/app_theme.dart        # Tema visual común
-├── shared/widgets/                # Componentes visuales comunes sin reglas clínicas
-│   ├── page_body.dart
-│   └── retinazo_logo.dart
+├── main.dart
+├── app/                         Arranque, configuración, dependencias, sesión y rutas
+├── core/                        Errores comunes, traducción de fallos y tema
+├── shared/                      Logo y contenedor de páginas
 └── features/
-    ├── auth/
-    │   ├── domain/                # Personal, contrato de acceso, ingreso y salida
-    │   ├── data/                  # Implementación de acceso de prueba
-    │   └── presentation/          # Controlador, validadores y pantallas
-    ├── patients/
-    │   ├── domain/                # Paciente, contrato de repositorio, registro
-    │   ├── data/                  # Repositorio en memoria
-    │   └── presentation/          # Controlador, formulario, listado y búsqueda
-    ├── evaluations/
-    │   ├── domain/                # Evaluación, borrador, imagen, resultado y casos de uso
-    │   ├── data/                  # Repositorio en memoria y adaptador de cámara/galería
-    │   └── presentation/          # Controladores, pantallas, widgets y formatos de texto
-    └── home/presentation/         # Inicio y menú lateral
+    ├── auth/                    Identidad y acceso
+    ├── admin/                   Gestión administrativa
+    ├── patients/                Expedientes de pacientes
+    ├── evaluations/             Tres imágenes, historial y resultados
+    └── home/                    Inicio y menú lateral (solo presentación)
+
+test/
+├── app/                         Configuración
+├── architecture/                Reglas de dependencias
+├── features/                    Pruebas por funcionalidad
+└── support/
+    ├── fakes/                   Cuatro repositorios de prueba
+    ├── fixtures.dart            Composición y datos sintéticos de prueba
+    └── auth_storage.dart        Adaptador de almacenamiento de pruebas
 ```
 
-`home` solo necesita presentación por ahora. No se crearon capas vacías, clientes HTTP, DTO ni fuentes de datos adicionales para funcionalidades que aún no existen.
-
-## Responsabilidad de cada capa
-
-| Capa | Contiene | Evita |
-|---|---|---|
-| `domain` | Entidades, reglas, contratos de repositorios y casos de uso | Widgets, plugins, JSON, HTTP, SQL y archivos del dispositivo |
-| `data` | Implementaciones de contratos y acceso al dispositivo | Navegación y estado visual |
-| `presentation` | Pantallas, controladores de estado, validación visual y formatos de texto | Instanciar almacenamiento o acceder directamente a cámara/servidor |
-| `app` | Ensamblado, navegación y coordinación entre módulos | Concentrar las reglas de pacientes o evaluaciones |
-| `core` / `shared` | Utilidades y componentes comunes | Convertirse en un almacén global de lógica de funcionalidades |
-
-Las dependencias del dominio apuntan a Dart y a contratos del propio dominio. Las implementaciones de datos dependen de esos contratos. Las pantallas llaman a los controladores; los controladores utilizan casos de uso y contratos de repositorios.
+Cada módulo con lógica de negocio conserva tres capas, sin subcarpetas por tipo de archivo:
 
 ```text
-Pantalla → Controlador → Caso de uso → Contrato de repositorio
-                                            ↑
-                              Implementación en data
-
-app/dependencies.dart conecta contratos e implementaciones.
+patients/
+├── data/
+│   ├── patient_mapper.dart              Conversión de filas y parámetros
+│   └── supabase_patient_repository.dart Persistencia remota
+├── domain/
+│   ├── patient.dart                     Entidad
+│   ├── patient_repository.dart          Contrato
+│   ├── register_patient.dart            Caso de uso
+│   ├── update_patient.dart              Caso de uso
+│   └── validate_patient.dart            Reglas compartidas
+└── presentation/
+    ├── patients_controller.dart         Estado y acciones
+    ├── patient_form_screen.dart         Registro y edición
+    ├── patient_detail_screen.dart       Detalle
+    └── patient_selection_screen.dart    Lista y selección
 ```
 
-Los módulos de evaluaciones consultan el contrato de pacientes para comprobar que el paciente existe. No acceden al repositorio concreto de pacientes. Las páginas utilizan `AppRoutes` como frontera de navegación; el router construye las páginas y les entrega las dependencias.
+La simplificación reduce los directorios de `lib` de 62 a 22. Conserva los 87 archivos Dart originales: 83 en `lib` y cuatro repositorios de prueba en `test/support/fakes`. Los nombres de archivo identifican entidades, repositorios, casos de uso, controladores y pantallas sin agregar niveles al explorador. El [mapa de rutas](../../docs/FLUTTER_FILE_MAP.csv) permite encontrar cada archivo anterior.
 
-## Estado e inyección
+Solo se crean carpetas con una responsabilidad implementada. La separación de capas depende de sus imports y contratos, no del número de carpetas.
 
-Se mantiene `ChangeNotifier` para los controladores de presentación, sin añadir otra librería de estado:
+## Dependencias
 
-- `AuthController`: ingreso, personal actual, carga y errores de acceso.
-- `PatientsController`: listado temporal, búsqueda, registro y errores.
-- `EvaluationsController`: preparación, guardado, historial y conteos de evaluaciones.
-- `CaptureController`: tres posiciones de imagen, selección, confirmación, reemplazo y eliminación. Pertenece a una pantalla de captura y se libera al salir.
+- `domain` usa Dart y errores comunes; no importa Flutter, Supabase, HTTP ni las capas `data`, `presentation` o `app`.
+- `data` implementa los contratos del dominio y traduce las respuestas externas. Los mappers contienen los nombres de columnas y payloads; los repositorios coordinan consultas y persistencia.
+- `presentation` usa entidades, contratos y casos de uso. No consulta Supabase ni HTTP directamente.
+- `RetinazoApp` exige dependencias explícitas. Su creador es responsable de liberarlas: `AppBootstrap` en producción y las pruebas en sus propios recorridos. No contiene un modo de prueba implícito.
+- `app/dependencies.dart` es el punto de composición que conecta repositorios y controladores. La inyección es manual; no requiere un contenedor externo.
+- `SessionController` coordina identidad, permisos de interfaz y carga de módulos. Las comprobaciones definitivas de autorización permanecen en PostgreSQL y FastAPI.
 
-`SessionController` agrupa los controladores de funcionalidades y coordina el cierre de sesión. No reemplaza a los repositorios. `AppScope` expone esta composición a la navegación, sin guardar registros por sí mismo.
+Algunas consultas y operaciones administrativas simples se delegan del controlador al contrato del repositorio. No todos los métodos tienen una clase de caso de uso independiente. Los casos de uso se utilizan donde hay reglas o una secuencia de negocio que centralizar.
 
-`AppDependencies.inMemory()` selecciona las implementaciones actuales. El constructor de `AppDependencies` admite otros repositorios y permite inyectar reloj y generador de identificadores para pruebas. `RetinazoApp` libera las dependencias que crea; cuando se inyectan desde fuera, quien las proporciona es responsable de liberarlas.
-
-## Modelo de información
-
-| Entidad | Datos y responsabilidad |
-|---|---|
-| `Patient` | ID, DNI, nombres, apellidos, nacimiento, sexo y datos opcionales. No contiene el ojo ni las observaciones de una visita. |
-| `EvaluationDraft` | Paciente, ojo y observaciones mientras se prepara una evaluación. |
-| `EvaluationImage` | Contenido de una imagen seleccionada; protege sus bytes de modificaciones externas. |
-| `Evaluation` | ID propio, ID del paciente, ojo, observaciones, tres imágenes, fecha, ID del profesional, estado y resultado opcional. |
-| `DetectionResult` | Grado ICDR 0–4, confianza opcional de 0 a 1 y versión del modelo. Su existencia en el dominio no significa que ya haya inferencia. |
-| `StaffMember` | Identidad del personal usado por la sesión; el acceso actual no verifica cuentas reales. |
-
-Un paciente puede tener evaluaciones de ambos ojos y de distintas visitas sin duplicar su identidad. No se diseñó todavía un modelo de citas/visitas compartidas entre ambos ojos.
-
-Los estados del dominio distinguen `pendingAnalysis`, `notGradable` y `completed`. Una evaluación completada requiere resultado; una pendiente o no graduable no lleva grado. El flujo actual solo crea evaluaciones pendientes. La pantalla de resultado está preparada visualmente para ese estado actual; mostrar respuestas reales y motivos de no graduabilidad será trabajo de integración.
-
-## Reglas actuales
-
-- El registro valida DNI de ocho dígitos, nombres, nacimiento no futuro y teléfono opcional de nueve dígitos.
-- El DNI no puede repetirse en el repositorio temporal. El ID interno de un paciente es independiente del DNI.
-- Una evaluación requiere paciente registrado, profesional y exactamente tres imágenes diferentes por contenido binario. Estas condiciones se comprueban también en dominio, no solo al habilitar botones.
-- Cada conjunto corresponde a un paciente y un ojo seleccionado. La confirmación del usuario no constituye una verificación automática de que las fotos pertenezcan al mismo ojo.
-- Cámara/galería comprueba que el archivo pueda decodificarse como imagen. No evalúa nitidez, iluminación, lesiones, calidad clínica ni cobertura.
-- Preparar una evaluación no la guarda. El botón Guardar añade el registro al historial; repetir el guardado del mismo ID no lo duplica.
-- Las listas y las imágenes expuestas por los repositorios/entidades no permiten modificar los registros desde las pantallas.
-- Cerrar sesión limpia pacientes, evaluaciones y personal actual. Reiniciar el proceso también pierde los datos, ya que no hay persistencia.
-
-Tres imágenes diferentes no garantizan tres campos clínicos adecuados. El protocolo de captura con teléfono y lente de 20D, campos requeridos y criterio de imagen no evaluable siguen pendientes de acuerdo y validación con el especialista.
-
-## Recorridos y casos de uso
+## Arranque y sesión
 
 ```text
-Ingreso
-  LoginScreen → AuthController → SignIn → AuthRepository
-                                      → PreviewAuthRepository
-
-Registro de paciente
-  PatientFormScreen → PatientsController → RegisterPatient → PatientRepository
-                                                           → InMemoryPatientRepository
-
-Selección de una imagen
-  CaptureScreen → CaptureController → SelectEvaluationImage
-                                   → ImageAcquisitionRepository
-                                   → DeviceImageRepository → image_picker
-  La pantalla muestra la vista previa; el controlador conserva la foto si se acepta.
-
-Preparación y guardado
-  ReviewScreen → PreparationScreen → EvaluationsController → CreateEvaluation
-                                                         → PatientRepository
-  ResultScreen → EvaluationsController → SaveEvaluation → EvaluationRepository
-                                                        → InMemoryEvaluationRepository
+main → AppBootstrap → AppDependencies.remote → RetinazoApp → AuthGate
 ```
 
-Los repositorios tienen contratos asíncronos para que la interfaz no tenga que cambiar su forma de invocarlos al conectar servicios. Eso no equivale a tener sincronización, recuperación tras fallos de red, caché persistente ni sesiones seguras implementadas.
+`AppConfig` lee configuración pública de compilación. `AppBootstrap` valida esa configuración e inicializa Supabase. `AuthLinkCoordinator` procesa enlaces de confirmación y recuperación mediante PKCE. `AuthGate` muestra acceso, recuperación o navegación autenticada según la sesión.
 
-## Qué cambió respecto a la estructura anterior
+El arranque real usa repositorios remotos. Las implementaciones `in_memory` y `preview` viven exclusivamente en `test/support/fakes` y se inyectan desde las pruebas; no sustituyen automáticamente una conexión fallida. Cerrar sesión descarta cachés locales y credenciales del dispositivo, sin borrar datos remotos.
 
-| Antes | Ahora |
-|---|---|
-| `screens/` con funcionalidades y varias vistas juntas | Páginas individuales en `features/<módulo>/presentation/pages/` |
-| `models/` con paciente mezclado con datos de evaluación | Entidades separadas en el dominio de cada módulo |
-| `DemoSession` con personal, pacientes y evaluaciones | Repositorios en memoria y controladores de cada funcionalidad, coordinados por `SessionController` |
-| Acceso a `image_picker` desde la pantalla | Adaptador `DeviceImageRepository` tras un contrato de dominio |
-| Navegación construida en cada pantalla | Rutas agrupadas en `app/router/app_routes.dart` |
-| `ApiService` anterior para una imagen, sin uso | Retirado; el contrato de un backend real se definirá para la evaluación de tres imágenes |
-| `theme/` y `widgets/` generales | Tema común en `core` y widgets generales en `shared`; widgets de evaluación dentro del módulo |
+## Datos estructurados e imágenes
 
-Se conserva la paleta verde, el logo del ojo, el menú lateral y los bloques claros del inicio. No se añadieron mensajes de demostración a la interfaz.
+Las cuentas se autentican con Supabase Auth. Los perfiles protegidos determinan el rol y la activación. Los pacientes, evaluaciones, resultados y metadatos usan PostgreSQL con RLS.
 
-## Conexión con el sistema propuesto en la tesis
+```text
+Formulario → Controlador → Caso de uso / contrato → Repositorio → Supabase
+```
 
-| Componente | Estado actual | Trabajo posterior |
-|---|---|---|
-| Flutter | Interfaces, navegación, reglas y datos temporales separados por capas | Implementar funcionalidades por casos de uso |
-| Autenticación | Acceso de prueba; registro valida sin crear cuentas y recuperación sin servicio | Acordar servicio, credenciales, tokens y autorización |
-| FastAPI | Sin cliente ni servidor implementado en esta etapa | Definir contrato de pacientes, evaluaciones, estados y errores |
-| PostgreSQL | Sin conexión | Persistencia de identidades, evaluaciones y resultados mediante backend |
-| Storage Bucket | Sin carga de archivos | Almacenar imágenes y asociarlas a posición, paciente y evaluación mediante backend |
-| RETFound / PyTorch / ONNX Runtime | Sin ejecución ni pesos integrados | Seleccionar y validar modelo, procesamiento de múltiples vistas y calidad |
-| Render | Propuesta del contexto | Evaluar y configurar despliegue cuando exista backend |
+`PatientMapper`, `EvaluationMapper` y `AdminMapper` aíslan la conversión de filas y parámetros dentro de `data`. El responsable de un paciente archivado puede ser nulo; el mapper respeta el tipo opcional de la entidad y la restricción SQL.
 
-Para incorporar una implementación remota se añadirían adaptadores en `data`, con fuentes de datos y modelos de transporte cuando el contrato exista, y se conectarían en `AppDependencies`. Las reglas de dominio permanecen independientes del formato JSON y de la ubicación de los archivos. La persistencia requerirá también cargar registros al iniciar sesión, manejar errores de lectura y definir qué información se conserva al salir; el cierre actual elimina exclusivamente registros temporales.
+Cada evaluación reúne exactamente tres imágenes distintas de un paciente y un solo ojo. La confirmación manual no verifica automáticamente que las fotos pertenezcan al mismo ojo.
 
-La inferencia tendrá su propio caso de uso y contrato cuando se defina su comportamiento. No se dejó un endpoint ficticio ni un resultado fabricado. Las tres imágenes deberán asociarse a una única evaluación del ojo y a una versión del modelo.
+```text
+SupabaseEvaluationRepository
+  → save_evaluation_draft (metadatos en PostgreSQL)
+  → ImageApiClient (FastAPI)
+  → originales privados en Cloudflare R2
+```
 
-TDT, TAP y PCD son indicadores del estudio y no se calculan en las estadísticas actuales. El conteo visual de pacientes/evaluaciones no equivale a esos indicadores. TAP requiere medir desde inicio del tamizaje hasta comunicación del resultado, no solo el tiempo de inferencia. Los 60 participantes descritos en el contexto no se asumen como conjunto de entrenamiento.
+`ImageApiClient` vive en `evaluations/data`. FastAPI verifica identidad, permisos, contenido y hashes antes de confirmar la carga mediante una RPC privilegiada. Las lecturas usan enlaces HTTPS temporales sin reenviarles el token de Supabase.
 
-## Verificación y mantenimiento
+El servicio FastAPI está preparado para ejecutarse en Render. El dominio móvil no conoce R2, Render ni sus claves. El modelo de predicción todavía no está integrado: no se fabrican grados ni confianza.
+
+## Roles y ciclo de vida
+
+- Un profesional activo con correo confirmado administra sus pacientes y realiza sus evaluaciones.
+- El administrador gestiona usuarios y expedientes globales. Registra pacientes eligiendo un profesional responsable; no recibe pacientes ni crea nuevas evaluaciones clínicas.
+- Reasignar un paciente conserva la autoría histórica de sus evaluaciones.
+- Desactivar un expediente registra motivo y conserva historial e imágenes; bloquea nuevas evaluaciones y cargas.
+- Reactivar requiere un responsable profesional elegible.
+- Los resultados y la confirmación de almacenamiento no se escriben libremente desde Flutter.
+
+Las cinco migraciones en `supabase/migrations` describen la evolución del esquema. No se reescriben migraciones ya aplicadas para realizar una limpieza de código.
+
+## Presentación
+
+Los controladores usan `ChangeNotifier`. Las pantallas observan cambios con `ListenableBuilder`.
+
+- `HomeScreen` compone el inicio; `HomeDrawer` dibuja el menú con datos y callbacks explícitos.
+- `AdminUsersScreen` lista y busca; `AdminUserEditScreen` edita una cuenta.
+- `CaptureController` pertenece a una pantalla de captura y se libera al salir.
+- `shared` contiene el logo y el contenedor de páginas reutilizables.
+- `AppTheme` mantiene colores, tipografía y estilos comunes.
+
+## Convenciones y verificación
+
+- Archivos y carpetas en `snake_case`; clases en `UpperCamelCase`.
+- Se conservan los nombres públicos actuales, incluidos los términos clínicos en español, para evitar renombrados masivos sin beneficio funcional.
+- Imports ordenados por SDK de Dart, paquetes y rutas relativas; el analizador exige `directives_ordering`.
+- `dart format` define el formato. Los errores de infraestructura se traducen a `AppFailure` sin exponer respuestas sensibles.
+- Las pruebas de arquitectura comprueban la independencia del dominio y bloquean acceso directo a infraestructura desde presentación.
+- Los adaptadores remotos y la conversión de datos se comprueban con respuestas sintéticas.
+
+Desde `app/`:
 
 ```sh
-flutter pub get
-flutter analyze
-flutter test
-flutter build apk --release
+flutter analyze --no-pub
+flutter test --no-pub
+dart format --output=none --set-exit-if-changed lib test
 ```
 
-Las pruebas cubren navegación y formularios, flujo de tres imágenes, cancelación/reemplazo, rechazo de duplicados, confirmación, resultado pendiente y guardado explícito. Las pruebas de reglas cubren conjuntos incompletos, separación de paciente/ojo, invariantes de resultado, guardado sin duplicados y limpieza de sesión.
+Desde la raíz, las comprobaciones adicionales son `backend/.venv/bin/python -m pytest backend/tests -q` y `python3 scripts/test_database.py`. Esta última usa PostgreSQL desechable en Docker, sin cambiar Supabase alojado.
 
-`test/architecture/dependency_rules_test.dart` verifica las fronteras principales: dominio sin Flutter o infraestructura, presentación sin acceso directo a datos/cámara/HTTP y datos sin presentación. Es una protección automática de imports, no una auditoría completa de arquitectura.
+## Pendientes funcionales separados de esta reorganización
 
-La cámara y sus permisos requieren una prueba adicional en un teléfono real. Las pruebas con repositorios inyectados no certifican el montaje óptico ni el comportamiento de dispositivos específicos.
+- Recuperación persistente de fotografías tras una carga interrumpida y cierre de la app.
+- Control de ediciones simultáneas, paginación de pacientes e historial y estadísticas globales independientes de los listados descargados.
+- Actualización de cambios remotos de propiedad o estado sin recarga manual.
+- Validación completa en teléfono físico, SMTP externo, activación de Google OAuth y firma de distribución Android.
+- Integración del modelo de análisis.
+
+Ver [administración](../../docs/ADMINISTRATION.md), [base de datos](../../docs/DATABASE.md), [imágenes R2](../../docs/R2_STORAGE.md) e [inventario y criterios de organización](../../docs/CODE_ORGANIZATION.md).
+
+## Guardado y miniaturas · 1.3.1
+
+`EvaluationRepository.save` devuelve el registro persistido. El controlador lo incorpora al historial local sin solicitar la lista completa. La pantalla muestra espera, evita navegación y envíos duplicados durante la carga y regresa al inicio tras el éxito. Los errores permiten reintentar el mismo identificador.
+
+`EvaluationThumbnail` solicita una miniatura al repositorio para cada fila visible. Se descarga solo el primer original autorizado, se verifica su tamaño/hash y `thumbnail_encoder.dart` genera una vista pequeña en memoria. La cola limita la concurrencia y la caché mantiene hasta 40 miniaturas; ambas se descartan al cerrar sesión. Las tres imágenes de detalle se descargan concurrentemente para reducir la espera y evitar consumir sus enlaces temporales en cola.
+
+La apertura de captura inicia una preparación HTTP opcional contra `/health`; fallar en esa preparación no bloquea elegir fotos. No es un monitor periódico ni garantiza que el alojamiento responda sin demora.
+
+
+## Carga optimizada y botón Atrás · 1.3.3
+
+El historial solicita una miniatura privada de 192 × 192 píxeles como máximo al endpoint `/v1/evaluations/{id}/thumbnail`. FastAPI comprueba la sesión y los permisos en cada petición; crea el derivado en R2 durante la primera consulta y lo reutiliza después. Los originales permanecen intactos. No requiere una migración SQL. Si el backend aún no ofrece el endpoint (HTTP 404), la app conserva el recorrido anterior como compatibilidad.
+
+Flutter admite dos solicitudes de miniaturas simultáneas, comparte solicitudes repetidas del mismo registro y conserva hasta 40 vistas pequeñas en memoria. La sesión limpia estas cachés. El detalle publica cada foto cuando termina su descarga y verificación, respetando su posición aunque lleguen fuera de orden. Las visitas recientes reutilizan los originales de hasta tres evaluaciones, tras volver a comprobar acceso al registro. La UI mantiene las imágenes parciales fuera de la entidad clínica: una evaluación sigue requiriendo tres imágenes.
+
+`AuthGate` conecta el navegador de sesión con `NavigatorPopHandler`. El botón Atrás del sistema regresa a la ruta anterior; desde el inicio, primero cierra el menú si está abierto. El bloqueo de navegación mientras se guarda una evaluación se conserva. La salida de la app corresponde a la raíz de navegación. La apariencia y los gestos del teléfono aún requieren una prueba física.
+
+La primera miniatura de un registro antiguo y la reactivación de Render Free aún pueden tardar. Estas mejoras reducen transferencia y esperas entre imágenes, pero no garantizan un tiempo fijo en todas las redes.
