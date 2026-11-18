@@ -64,3 +64,27 @@ class EvaluationImages:
             links.append({"position": image.position,
                           "url": self.store.signed_get(image.key)})
         return links
+
+    def thumbnail(self, actor: Actor, evaluation_id: str) -> bytes:
+        # Authorize on every request, including cached derivatives.
+        record = self.gateway.evaluation(actor, evaluation_id)
+        expected = sorted(record.images, key=lambda image: image.position)
+        if len(expected) != 3 or not all(image.uploaded for image in expected):
+            raise StorageFailure(409, "Las imágenes todavía están pendientes de carga")
+        image = expected[0]
+        if (image.position != 1 or image.provider != "cloudflare_r2"
+                or image.bucket != self.store.bucket
+                or image.key != image.object_key(record.id)):
+            raise StorageFailure(409, "La referencia de almacenamiento no es válida")
+        key = f"evaluations/{record.id}/thumbnails/v1-{image.sha256}.jpg"
+        preview = self.store.read(key, 128 * 1024)
+        if preview is not None:
+            return preview
+        # Older evaluations gain a derivative on first access; originals never change.
+        original = self.store.read(image.key, self.max_image_bytes)
+        if (original is None or len(original) != image.byte_size
+                or hashlib.sha256(original).hexdigest() != image.sha256):
+            raise StorageFailure(409, "La imagen no coincide con su registro")
+        preview = self.inspector.thumbnail(original, image.content_type)
+        self.store.put(key, preview, "image/jpeg")
+        return preview

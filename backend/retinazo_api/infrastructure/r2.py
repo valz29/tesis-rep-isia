@@ -32,5 +32,25 @@ class R2Store:
         except (BotoCoreError, ClientError) as exc:
             raise StorageFailure(503, "No se pudo autorizar la lectura de la imagen") from exc
 
+    def read(self, key: str, limit: int) -> bytes | None:
+        try:
+            response = self.client.get_object(Bucket=self.bucket, Key=key)
+            body = response["Body"]
+            try:
+                if response["ContentLength"] > limit:
+                    raise StorageFailure(413, "La imagen supera el tamaño permitido")
+                content = body.read(limit + 1)
+                if len(content) > limit:
+                    raise StorageFailure(413, "La imagen supera el tamaño permitido")
+                return content
+            finally:
+                body.close()
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
+                return None
+            raise StorageFailure(503, "No se pudo recuperar la miniatura") from exc
+        except BotoCoreError as exc:
+            raise StorageFailure(503, "No se pudo recuperar la miniatura") from exc
+
     def close(self):
         self.client.close()

@@ -113,3 +113,10 @@ Los enlaces GET son credenciales temporales: quien posea uno puede usarlo hasta 
 - [Enlaces firmados](https://developers.cloudflare.com/r2/api/s3/presigned-urls/).
 - [Render y FastAPI](https://render.com/docs/deploy-fastapi).
 - [Límites del alojamiento gratuito](https://render.com/docs/free).
+
+
+### Miniaturas privadas
+
+`GET /v1/evaluations/{id}/thumbnail` valida el mismo token y acceso a la evaluación que la descarga de originales. Devuelve JPEG de hasta 192 × 192 píxeles con `Cache-Control: private, no-store`. La primera consulta verifica tamaño y SHA-256 del original y crea un derivado en `evaluations/{id}/thumbnails/v1-{sha256}.jpg`; las siguientes reutilizan ese objeto privado. No se modifican originales ni tablas SQL. La versión en la ruta permite regenerar derivados si cambia el algoritmo. Los clientes anteriores siguen usando el endpoint `/images`.
+
+La primera miniatura de una evaluación antigua aún requiere descargar y decodificar su primer original en el servidor. Render Free puede añadir una espera al reactivarse. La app conserva una caché en memoria durante la sesión; no se configura acceso público a R2.

@@ -22,3 +22,11 @@ class PillowInspector:
         except (UnidentifiedImageError, OSError, SyntaxError,
                 Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
             raise StorageFailure(422, "Uno de los archivos no es una imagen válida") from exc
+
+    def thumbnail(self, content: bytes, content_type: str) -> bytes:
+        self.inspect(content, content_type)
+        with Image.open(BytesIO(content)) as decoded:
+            decoded.thumbnail((192, 192))
+            output = BytesIO()
+            decoded.convert("RGB").save(output, format="JPEG", quality=80)
+            return output.getvalue()

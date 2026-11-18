@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ..application.images import EvaluationImages
@@ -49,3 +49,9 @@ def routes(app: FastAPI):
                   service: Annotated[EvaluationImages, Depends(images)]):
         return JSONResponse({"images": service.downloads(actor, str(evaluation_id))},
                             headers={"Cache-Control": "no-store"})
+
+    @app.get("/v1/evaluations/{evaluation_id}/thumbnail")
+    def thumbnail(evaluation_id: UUID, actor: Annotated[Actor, Depends(authenticate)],
+                  service: Annotated[EvaluationImages, Depends(images)]):
+        return Response(service.thumbnail(actor, str(evaluation_id)),
+                        media_type="image/jpeg", headers={"Cache-Control": "private, no-store"})

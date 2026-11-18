@@ -57,6 +57,12 @@ class Store:
             raise StorageFailure(503, "R2 no disponible")
         self.objects[key] = content
 
+    def read(self, key, limit):
+        content = self.objects.get(key)
+        if content is not None and len(content) > limit:
+            raise StorageFailure(413, 'Too large')
+        return content
+
     def signed_get(self, key):
         return f"https://test.r2.cloudflarestorage.com/{key}?signed=test"
 
@@ -155,3 +161,39 @@ def test_administrator_cannot_upload_images(setup):
     gateway.authenticate = lambda token: Actor(USER, token, "admin")
     assert upload(client, contents).status_code == 403
     assert not store.objects and gateway.finalized == 0
+
+
+def test_thumbnail_is_small_private_and_reused_without_changing_originals(setup):
+    contents, gateway, store, client = setup
+    assert upload(client, contents).status_code == 204
+    originals = dict(store.objects)
+    route = f"/v1/evaluations/{EVAL}/thumbnail"
+    headers = {"Authorization": "Bearer synthetic-session"}
+    assert client.get(route).status_code == 401
+    response = client.get(route, headers=headers)
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/jpeg"
+    assert response.headers["cache-control"] == "private, no-store"
+    with Image.open(BytesIO(response.content)) as preview:
+        assert max(preview.size) <= 192
+    assert all(store.objects[key] == content for key, content in originals.items())
+    assert len(store.objects) == 4
+    # A stored derivative no longer needs to read or decode the original.
+    original_read = store.read
+    store.read = lambda key, limit: original_read(key, limit) if '/thumbnails/' in key else pytest.fail('original downloaded again')
+    assert client.get(route, headers=headers).content == response.content
+    gateway.forbidden = True
+    assert client.get(route, headers=headers).status_code == 404
+
+
+def test_thumbnail_rejects_changed_original_and_cross_patient_reference(setup):
+    contents, gateway, store, client = setup
+    assert upload(client, contents).status_code == 204
+    route = f"/v1/evaluations/{EVAL}/thumbnail"
+    headers = {"Authorization": "Bearer synthetic-session"}
+    first = gateway.record.images[0]
+    store.objects[first.key] = b'tampered'
+    assert client.get(route, headers=headers).status_code == 409
+    gateway.record = replace(gateway.record, images=(replace(first, key='other/eye.png'), *gateway.record.images[1:]))
+    assert client.get(route, headers=headers).status_code == 409
+    assert len(store.objects) == 3
