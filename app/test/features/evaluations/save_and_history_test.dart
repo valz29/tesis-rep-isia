@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart' hide Evaluation;
-import 'package:rd_app/core/errors/app_failure.dart';
-import 'package:rd_app/features/evaluations/data/repositories/in_memory_evaluation_repository.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_draft.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image_metadata.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/history_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/result_screen.dart';
-import 'package:rd_app/features/home/presentation/pages/home_screen.dart';
+import 'package:rd_app/core/app_failure.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_draft.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image_metadata.dart';
+import 'package:rd_app/features/evaluations/presentation/history_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/result_screen.dart';
+import 'package:rd_app/features/home/presentation/home_screen.dart';
 
+import '../../support/fakes/in_memory_evaluation_repository.dart';
 import '../../support/fixtures.dart';
 
 Evaluation evaluation({bool stored = false, bool draft = false}) => Evaluation(
@@ -78,13 +78,98 @@ class ColdHistoryRepository extends InMemoryEvaluationRepository {
   }
 
   @override
-  Future<List<EvaluationImage>> loadImages(String id) async {
+  Future<List<EvaluationImage>> loadImages(
+    String id, {
+    void Function(int index, EvaluationImage image)? onImage,
+  }) async {
     details++;
     return [for (var n = 1; n <= 3; n++) EvaluationImage(photo(n))];
   }
 }
 
+class ProgressiveRepository extends ColdHistoryRepository {
+  final first = Completer<void>();
+  final finish = Completer<void>();
+  void Function(int, EvaluationImage)? callback;
+  ProgressiveRepository(super.record);
+  @override
+  Future<List<EvaluationImage>> loadImages(
+    String id, {
+    void Function(int, EvaluationImage)? onImage,
+  }) async {
+    callback = onImage;
+    onImage?.call(1, EvaluationImage(photo(2)));
+    first.complete();
+    await finish.future;
+    return [for (var n = 1; n <= 3; n++) EvaluationImage(photo(n))];
+  }
+}
+
 void main() {
+  testWidgets(
+    'Detail shows the arriving image in its correct slot while another is still pending',
+    (tester) async {
+      final record = evaluation(stored: true);
+      final repository = ProgressiveRepository(record);
+      final dependencies = await createDependencies(
+        seedPatient: true,
+        evaluations: repository,
+      );
+      addTearDown(dependencies.dispose);
+      await dependencies.session.evaluations.load();
+      await tester.pumpWidget(
+        harness(
+          dependencies,
+          ResultScreen(
+            evaluacion: record,
+            sesion: dependencies.session,
+            desdeHistorial: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(Image), findsOneWidget);
+      expect(
+        dependencies.session.evaluations.arrivingImage(record.id, 0),
+        isNull,
+      );
+      expect(
+        dependencies.session.evaluations.arrivingImage(record.id, 1),
+        isNotNull,
+      );
+      expect(dependencies.session.evaluations.loadingImagesFor, record.id);
+      repository.finish.complete();
+      await tester.pumpAndSettle();
+      expect(
+        dependencies.session.evaluations.byId(record.id)!.imagenes,
+        hasLength(3),
+      );
+      expect(dependencies.session.evaluations.loadingImagesFor, isNull);
+    },
+  );
+
+  test(
+    'Clearing the session discards late progressive image callbacks',
+    () async {
+      final record = evaluation(stored: true);
+      final repository = ProgressiveRepository(record);
+      final dependencies = await createDependencies(evaluations: repository);
+      addTearDown(dependencies.dispose);
+      final controller = dependencies.session.evaluations;
+      await controller.load();
+      final loading = controller.loadImages(record.id);
+      await repository.first.future;
+      await controller.clear();
+      repository.callback?.call(0, EvaluationImage(photo(1)));
+      repository.finish.complete();
+      await loading;
+      expect(controller.evaluations, isEmpty);
+      expect(controller.arrivingImage(record.id, 0), isNull);
+      expect(controller.loadingImagesFor, isNull);
+    },
+  );
+
   testWidgets(
     'Save displays progress, prevents duplicate requests and returns home only after success',
     (tester) async {

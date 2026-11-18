@@ -5,7 +5,7 @@ import 'package:app_links/app_links.dart';
 import 'package:crypto/crypto.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'config/app_config.dart';
+import 'app_config.dart';
 
 /// Starts after session listeners exist, including on a cold recovery launch.
 class AuthLinkCoordinator {

@@ -64,3 +64,14 @@ La conexión real completa se comprobó con `backend/.venv/bin/python scripts/sm
 ## Ciclo de vida y roles (1.3.0)
 
 La quinta migración y la API restringen la carga a profesionales responsables de pacientes activos. Los administradores consultan imágenes, pero no realizan cargas clínicas. Desactivar un paciente conserva sus referencias y objetos; bloquea nuevas cargas incluso con una sesión anterior. La RPC final revalida actividad para resolver cambios de permisos durante una transferencia.
+
+
+## Carga optimizada y botón Atrás · 1.3.3
+
+El historial solicita una miniatura privada de 192 × 192 píxeles como máximo al endpoint `/v1/evaluations/{id}/thumbnail`. FastAPI comprueba la sesión y los permisos en cada petición; crea el derivado en R2 durante la primera consulta y lo reutiliza después. Los originales permanecen intactos. No requiere una migración SQL. Si el backend aún no ofrece el endpoint (HTTP 404), la app conserva el recorrido anterior como compatibilidad.
+
+Flutter admite dos solicitudes de miniaturas simultáneas, comparte solicitudes repetidas del mismo registro y conserva hasta 40 vistas pequeñas en memoria. La sesión limpia estas cachés. El detalle publica cada foto cuando termina su descarga y verificación, respetando su posición aunque lleguen fuera de orden. Las visitas recientes reutilizan los originales de hasta tres evaluaciones, tras volver a comprobar acceso al registro. La UI mantiene las imágenes parciales fuera de la entidad clínica: una evaluación sigue requiriendo tres imágenes.
+
+`AuthGate` conecta el navegador de sesión con `NavigatorPopHandler`. El botón Atrás del sistema regresa a la ruta anterior; desde el inicio, primero cierra el menú si está abierto. El bloqueo de navegación mientras se guarda una evaluación se conserva. La salida de la app corresponde a la raíz de navegación. La apariencia y los gestos del teléfono aún requieren una prueba física.
+
+La primera miniatura de un registro antiguo y la reactivación de Render Free aún pueden tardar. Estas mejoras reducen transferencia y esperas entre imágenes, pero no garantizan un tiempo fijo en todas las redes.

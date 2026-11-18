@@ -15,6 +15,15 @@ void main() {
       for (final file in files) {
         for (final match in imports.allMatches(file.readAsStringSync())) {
           final target = match.group(1)!;
+          final resolved = target.startsWith('package:rd_app/')
+              ? File('lib/${target.substring('package:rd_app/'.length)}')
+                    .absolute
+                    .uri
+                    .normalizePath()
+              : file.absolute.uri.resolve(target).normalizePath();
+          if (resolved.path.contains('/test/')) {
+            violations.add('${file.path} imports test support -> $target');
+          }
           if (file.path.contains('/domain/')) {
             final forbidden =
                 target.startsWith('package:flutter') ||

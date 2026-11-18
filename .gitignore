@@ -6,6 +6,9 @@
 *.key
 *.jks
 *.keystore
+*.p12
+*.pfx
+release-signing.properties
 key.properties
 google-services.json
 GoogleService-Info.plist
@@ -42,6 +45,9 @@ tensorboard/
 *.heic
 # Excepcion: assets de la app (iconos, logos) se agregan con -f si corresponde
 !app/assets/**
+!app/android/app/src/main/res/mipmap-*/ic_launcher.png
+!app/android/app/src/main/res/drawable-*/ic_launcher_foreground.png
+!app/ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png
 
 # --- Python ---
 .venv/

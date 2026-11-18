@@ -1,18 +1,103 @@
+import 'dart:async';
+
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:rd_app/core/errors/app_failure.dart';
-import 'package:rd_app/features/evaluations/data/datasources/image_api_client.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image_metadata.dart';
+import 'package:rd_app/core/app_failure.dart';
+import 'package:rd_app/features/evaluations/data/image_api_client.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image_metadata.dart';
 
 import '../../support/fixtures.dart';
 
 const id = '30000000-0000-0000-0000-000000000001';
 void main() {
+  test(
+    'Detail reports each verified image before the slowest download completes',
+    () async {
+      final last = Completer<http.Response>();
+      final arrived = <int>[];
+      final firstArrived = Completer<void>();
+      final metadata = [
+        for (var n = 1; n <= 3; n++)
+          EvaluationImageMetadata(
+            position: n,
+            sha256: sha256.convert(photo(n)).toString(),
+            contentType: 'image/png',
+            byteSize: photo(n).length,
+            uploaded: true,
+          ),
+      ];
+      final transport = MockClient((request) async {
+        if (request.url.host == 'images.example.invalid') {
+          return http.Response(
+            jsonEncode({
+              'images': [
+                for (var n = 1; n <= 3; n++)
+                  {
+                    'position': n,
+                    'url': 'https://test.r2.cloudflarestorage.com/$n',
+                  },
+              ],
+            }),
+            200,
+          );
+        }
+        final position = int.parse(request.url.pathSegments.last);
+        return position == 3
+            ? last.future
+            : http.Response.bytes(photo(position), 200);
+      });
+      addTearDown(transport.close);
+      final api = ImageApiClient(
+        Uri.parse('https://images.example.invalid'),
+        () => 'synthetic',
+        transport: transport,
+      );
+      final download = api.download(
+        id,
+        metadata,
+        onImage: (index, image) {
+          arrived.add(index);
+          if (arrived.length == 2) firstArrived.complete();
+        },
+      );
+      await firstArrived.future;
+      expect(arrived, unorderedEquals([0, 1]));
+      last.complete(http.Response.bytes(photo(3), 200));
+      expect(await download, hasLength(3));
+      expect(arrived.last, 2);
+    },
+  );
+
+  test(
+    'Thumbnail uses authenticated small response without downloading originals',
+    () async {
+      var calls = 0;
+      final transport = MockClient((request) async {
+        calls++;
+        expect(request.url.path, '/v1/evaluations/$id/thumbnail');
+        expect(request.headers['Authorization'], 'Bearer synthetic');
+        return http.Response.bytes(
+          photo(1),
+          200,
+          headers: {'content-type': 'image/jpeg'},
+        );
+      });
+      addTearDown(transport.close);
+      final api = ImageApiClient(
+        Uri.parse('https://images.example.invalid'),
+        () => 'synthetic',
+        transport: transport,
+      );
+      expect((await api.downloadThumbnail(id, [])).bytes, photo(1));
+      expect(calls, 1);
+    },
+  );
+
   test(
     'Authenticated image API uploads exactly three files to FastAPI',
     () async {

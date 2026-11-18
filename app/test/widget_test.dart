@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rd_app/app/app.dart';
-import 'package:rd_app/features/auth/domain/entities/staff_member.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_draft.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/capture_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/eye_selection_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/history_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/result_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/review_screen.dart';
-import 'package:rd_app/features/evaluations/presentation/pages/single_image_preview_screen.dart';
-import 'package:rd_app/features/home/presentation/pages/home_screen.dart';
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
-import 'package:rd_app/features/patients/presentation/pages/patient_selection_screen.dart';
+import 'package:rd_app/features/auth/domain/staff_member.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_draft.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image.dart';
+import 'package:rd_app/features/evaluations/presentation/capture_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/eye_selection_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/history_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/result_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/review_screen.dart';
+import 'package:rd_app/features/evaluations/presentation/single_image_preview_screen.dart';
+import 'package:rd_app/features/home/presentation/home_screen.dart';
+import 'package:rd_app/features/patients/domain/patient.dart';
+import 'package:rd_app/features/patients/presentation/patient_selection_screen.dart';
 
 import 'support/fixtures.dart';
 
@@ -37,10 +37,12 @@ void main() {
   testWidgets('Welcome, registration validation, login and menu navigation', (
     tester,
   ) async {
-    await tester.pumpWidget(const RetinazoApp());
+    final dependencies = memoryDependencies();
+    addTearDown(dependencies.dispose);
+    await tester.pumpWidget(RetinazoApp(dependencies: dependencies));
     await tester.pumpAndSettle();
     expect(find.text('Retinazo'), findsOneWidget);
-    await tapVisible(tester, find.text('Registrarse'));
+    await tapVisible(tester, find.text('Crear cuenta'));
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'Personal de prueba',
@@ -66,20 +68,14 @@ void main() {
     );
     expect(find.text('demo@example.com'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).at(0), '');
-    await tapVisible(
-      tester,
-      find.widgetWithText(FilledButton, 'Iniciar sesión'),
-    );
+    await tapVisible(tester, find.widgetWithText(FilledButton, 'Ingresar'));
     expect(find.text('Ingresa un correo electrónico válido'), findsOneWidget);
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'demo@example.com',
     );
     await tester.enterText(find.byType(TextFormField).at(1), 'demo12345');
-    await tapVisible(
-      tester,
-      find.widgetWithText(FilledButton, 'Iniciar sesión'),
-    );
+    await tapVisible(tester, find.widgetWithText(FilledButton, 'Ingresar'));
     expect(find.byType(HomeScreen), findsOneWidget);
     await tapVisible(tester, find.byKey(const Key('menu-0')));
     expect(find.text('Todavía no hay pacientes'), findsOneWidget);

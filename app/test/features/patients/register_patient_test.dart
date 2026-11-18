@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rd_app/core/errors/app_failure.dart';
-import 'package:rd_app/features/patients/data/repositories/in_memory_patient_repository.dart';
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
-import 'package:rd_app/features/patients/domain/usecases/register_patient.dart';
+import 'package:rd_app/core/app_failure.dart';
+import 'package:rd_app/features/patients/domain/patient.dart';
+import 'package:rd_app/features/patients/domain/register_patient.dart';
+
+import '../../support/fakes/in_memory_patient_repository.dart';
 
 Patient patient({
   String id = 'patient-1',

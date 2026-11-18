@@ -3,34 +3,30 @@ import 'dart:math';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../features/admin/data/repositories/in_memory_admin_repository.dart';
-import '../features/admin/data/repositories/supabase_admin_repository.dart';
-import '../features/admin/domain/repositories/admin_repository.dart';
-import '../features/admin/presentation/controllers/admin_controller.dart';
-import '../features/auth/data/repositories/preview_auth_repository.dart';
-import '../features/auth/data/repositories/supabase_auth_repository.dart';
-import '../features/auth/domain/repositories/auth_repository.dart';
-import '../features/auth/domain/usecases/register_staff.dart';
-import '../features/auth/domain/usecases/sign_in.dart';
-import '../features/auth/domain/usecases/sign_out.dart';
-import '../features/auth/presentation/controllers/auth_controller.dart';
-import '../features/evaluations/data/datasources/image_api_client.dart';
-import '../features/evaluations/data/repositories/device_image_repository.dart';
-import '../features/evaluations/data/repositories/in_memory_evaluation_repository.dart';
-import '../features/evaluations/data/repositories/supabase_evaluation_repository.dart';
-import '../features/evaluations/domain/entities/evaluation.dart';
-import '../features/evaluations/domain/repositories/evaluation_repository.dart';
-import '../features/evaluations/domain/repositories/image_acquisition_repository.dart';
-import '../features/evaluations/domain/usecases/create_evaluation.dart';
-import '../features/evaluations/domain/usecases/save_evaluation.dart';
-import '../features/evaluations/domain/usecases/select_evaluation_image.dart';
-import '../features/evaluations/presentation/controllers/evaluations_controller.dart';
-import '../features/patients/data/repositories/in_memory_patient_repository.dart';
-import '../features/patients/data/repositories/supabase_patient_repository.dart';
-import '../features/patients/domain/repositories/patient_repository.dart';
-import '../features/patients/domain/usecases/register_patient.dart';
-import '../features/patients/domain/usecases/update_patient.dart';
-import '../features/patients/presentation/controllers/patients_controller.dart';
+import '../features/admin/data/supabase_admin_repository.dart';
+import '../features/admin/domain/admin_repository.dart';
+import '../features/admin/presentation/admin_controller.dart';
+import '../features/auth/data/supabase_auth_repository.dart';
+import '../features/auth/domain/auth_repository.dart';
+import '../features/auth/domain/register_staff.dart';
+import '../features/auth/domain/sign_in.dart';
+import '../features/auth/domain/sign_out.dart';
+import '../features/auth/presentation/auth_controller.dart';
+import '../features/evaluations/data/device_image_repository.dart';
+import '../features/evaluations/data/image_api_client.dart';
+import '../features/evaluations/data/supabase_evaluation_repository.dart';
+import '../features/evaluations/domain/create_evaluation.dart';
+import '../features/evaluations/domain/evaluation.dart';
+import '../features/evaluations/domain/evaluation_repository.dart';
+import '../features/evaluations/domain/image_acquisition_repository.dart';
+import '../features/evaluations/domain/save_evaluation.dart';
+import '../features/evaluations/domain/select_evaluation_image.dart';
+import '../features/evaluations/presentation/evaluations_controller.dart';
+import '../features/patients/data/supabase_patient_repository.dart';
+import '../features/patients/domain/patient_repository.dart';
+import '../features/patients/domain/register_patient.dart';
+import '../features/patients/domain/update_patient.dart';
+import '../features/patients/presentation/patients_controller.dart';
 import 'session_controller.dart';
 
 /// Composition root: the only place that chooses concrete infrastructure.
@@ -41,7 +37,7 @@ class AppDependencies {
     required PatientRepository patientRepository,
     required EvaluationRepository evaluationRepository,
     required ImageAcquisitionRepository imageRepository,
-    AdminRepository? adminRepository,
+    required AdminRepository adminRepository,
     DateTime Function()? now,
     String Function()? newId,
     EvaluationStatus initialStatus = EvaluationStatus.pendingAnalysis,
@@ -55,16 +51,8 @@ class AppDependencies {
          newId ?? _randomId,
          initialStatus,
          googleEnabled,
-         adminRepository ?? InMemoryAdminRepository(),
+         adminRepository,
        );
-
-  factory AppDependencies.inMemory({ImageAcquisitionRepository? images}) =>
-      AppDependencies(
-        authRepository: PreviewAuthRepository(),
-        patientRepository: InMemoryPatientRepository(),
-        evaluationRepository: InMemoryEvaluationRepository(),
-        imageRepository: images ?? DeviceImageRepository(ImagePicker()),
-      );
 
   factory AppDependencies.remote(
     SupabaseClient client, {

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rd_app/app/dependencies.dart';
-import 'package:rd_app/features/admin/data/repositories/in_memory_admin_repository.dart';
-import 'package:rd_app/features/admin/domain/entities/admin_account.dart';
-import 'package:rd_app/features/auth/data/repositories/preview_auth_repository.dart';
-import 'package:rd_app/features/auth/domain/entities/staff_member.dart';
-import 'package:rd_app/features/evaluations/data/repositories/in_memory_evaluation_repository.dart';
-import 'package:rd_app/features/patients/data/repositories/in_memory_patient_repository.dart';
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
-import 'package:rd_app/features/patients/presentation/pages/patient_detail_screen.dart';
-import 'package:rd_app/features/patients/presentation/pages/patient_form_screen.dart';
+import 'package:rd_app/features/admin/domain/admin_account.dart';
+import 'package:rd_app/features/auth/domain/staff_member.dart';
+import 'package:rd_app/features/patients/domain/patient.dart';
+import 'package:rd_app/features/patients/presentation/patient_detail_screen.dart';
+import 'package:rd_app/features/patients/presentation/patient_form_screen.dart';
 
+import '../../support/fakes/in_memory_admin_repository.dart';
+import '../../support/fakes/in_memory_evaluation_repository.dart';
+import '../../support/fakes/in_memory_patient_repository.dart';
+import '../../support/fakes/preview_auth_repository.dart';
 import '../../support/fixtures.dart';
 
 class LifecycleAdmin extends InMemoryAdminRepository {

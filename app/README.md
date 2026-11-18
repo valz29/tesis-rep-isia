@@ -2,7 +2,7 @@
 
 Aplicación Flutter organizada con Clean Architecture por funcionalidad, con la identidad verde y el flujo de tres imágenes del mismo ojo.
 
-## Estado al 12 de noviembre de 2026 · versión 1.3.1
+## Estado al 18 de noviembre de 2026 · versión 1.3.6
 
 Implementado en código: acceso por correo y contraseña, registro con confirmación, recuperación de contraseña, restauración de sesión, pacientes con creación/edición, búsqueda, historial y borradores de evaluación. Los adaptadores usan Supabase y las políticas SQL separan expedientes por profesional; el administrador gestiona todos los expedientes y las cuentas.
 
@@ -31,7 +31,9 @@ lib/
     home/         presentation
 ```
 
-`main.dart` inicia `AppBootstrap`, que valida la configuración y crea `AppDependencies.remote`. Los contratos del dominio no dependen de Supabase. Los repositorios en memoria se conservan para pruebas con inyección explícita; el arranque de producción nunca cambia a ellos si falla la conexión. Cerrar sesión limpia tokens y caché local, conservando los registros remotos.
+Las capas contienen sus archivos directamente, sin subcarpetas por tipo. `lib` tiene 22 directorios; el [mapa de rutas](../docs/FLUTTER_FILE_MAP.csv) relaciona los nombres anteriores y actuales.
+
+`main.dart` inicia `AppBootstrap`, que valida la configuración y crea `AppDependencies.remote`. Los contratos del dominio no dependen de Supabase. Los repositorios en memoria viven en `test/support/fakes` para pruebas con inyección explícita; el arranque de producción nunca cambia a ellos si falla la conexión. Cerrar sesión limpia tokens y caché local, conservando los registros remotos.
 
 Consulta [organización del código](../docs/CODE_ORGANIZATION.md), [arquitectura](docs/ARCHITECTURE.md), [base de datos](../docs/DATABASE.md) y [activación del esquema](../supabase/README.md).
 
@@ -44,10 +46,10 @@ flutter pub get
 flutter run --dart-define-from-file=config/supabase.local.json
 flutter analyze
 flutter test
-flutter build apk --release --dart-define-from-file=config/supabase.local.json
+./tool/build_release.sh
 ```
 
-APK: `build/app/outputs/flutter-apk/app-release.apk`. Android utiliza firma de desarrollo para instalaciones de prueba. iOS y captura en teléfono físico aún requieren validación.
+APK: `build/app/outputs/flutter-apk/app-release.apk`. Android exige la firma permanente para compilar en modo release. Consulta [distribución y firma](../docs/ANDROID_RELEASES.md) para configurar la clave privada y publicar actualizaciones. iOS y captura en teléfono físico aún requieren validación.
 
 En Supabase ya está configurado `com.devloop.retinazo://auth-callback/` como Site URL y retorno permitido de Auth. La confirmación de correo permanece activa. Los enlaces PKCE deben abrirse en el dispositivo donde se inició la solicitud.
 
@@ -55,7 +57,13 @@ Referencias: [retorno móvil](https://supabase.com/docs/guides/auth/native-mobil
 
 ## Identidad visual
 
-Nombre: Retinazo. Verde `#0F6B6B`, fondo `#F2F6F6`, tinta `#17292B`. Logo: `assets/branding/retinazo-eye.png`.
+Nombre: Retinazo. Verde `#0F6B6B`, fondo `#F2F6F6`, tinta `#17292B`. Logo: `assets/branding/retinazo-eye.png`. El mismo ojo se utiliza como icono de instalación de Android e iOS. Los recursos nativos se generan con [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons), una dependencia de desarrollo, mediante:
+
+```sh
+dart run tool/generate_icons.dart
+```
+
+La configuración reproducible está en `flutter_launcher_icons.yaml`. Incluye fondo claro y capas adaptativas para Android. Los iconos iOS están generados; la compilación iOS sigue pendiente en macOS.
 
 ## Imágenes en R2: integración activa
 
@@ -68,3 +76,26 @@ Guardar muestra progreso, bloquea envíos duplicados y vuelve al inicio únicame
 El historial crea filas bajo demanda y recupera la primera foto autorizada sin abrir el detalle. Las miniaturas se reducen localmente y se conservan en una caché de sesión acotada; si fallan, ofrecen reintento. Los originales clínicos no se recomprimen ni se sustituyen. Al abrir captura se intenta preparar el servicio HTTP en segundo plano, sin mantenerlo despierto periódicamente.
 
 Las esperas todavía dependen de la red, del tamaño de los originales y de la disponibilidad del alojamiento. La prueba física del APK en el teléfono del usuario sigue pendiente.
+
+
+## Carga optimizada y botón Atrás · 1.3.3
+
+El historial solicita una miniatura privada de 192 × 192 píxeles como máximo al endpoint `/v1/evaluations/{id}/thumbnail`. FastAPI comprueba la sesión y los permisos en cada petición; crea el derivado en R2 durante la primera consulta y lo reutiliza después. Los originales permanecen intactos. No requiere una migración SQL. Si el backend aún no ofrece el endpoint (HTTP 404), la app conserva el recorrido anterior como compatibilidad.
+
+Flutter admite dos solicitudes de miniaturas simultáneas, comparte solicitudes repetidas del mismo registro y conserva hasta 40 vistas pequeñas en memoria. La sesión limpia estas cachés. El detalle publica cada foto cuando termina su descarga y verificación, respetando su posición aunque lleguen fuera de orden. Las visitas recientes reutilizan los originales de hasta tres evaluaciones, tras volver a comprobar acceso al registro. La UI mantiene las imágenes parciales fuera de la entidad clínica: una evaluación sigue requiriendo tres imágenes.
+
+`AuthGate` conecta el navegador de sesión con `NavigatorPopHandler`. El botón Atrás del sistema regresa a la ruta anterior; desde el inicio, primero cierra el menú si está abierto. El bloqueo de navegación mientras se guarda una evaluación se conserva. La salida de la app corresponde a la raíz de navegación. La apariencia y los gestos del teléfono aún requieren una prueba física.
+
+La primera miniatura de un registro antiguo y la reactivación de Render Free aún pueden tardar. Estas mejoras reducen transferencia y esperas entre imágenes, pero no garantizan un tiempo fijo en todas las redes.
+
+
+## Bienvenida y acceso animados · 1.3.4
+
+La propuesta 2 se aplica a bienvenida e inicio de sesión: encabezado verde curvo, ojo oficial, superficies claras y formulario centrado cuando hay espacio. `features/auth/presentation/auth_visuals.dart` reúne el fondo decorativo, el distintivo del logo y la entrada escalonada de los elementos. Usa únicamente animaciones de Flutter, dura 1,6 segundos y termina sin mantener ciclos en segundo plano. Respeta `MediaQuery.disableAnimations` para reducir movimiento.
+
+Las vistas permiten desplazamiento con teclado, pantalla horizontal y texto ampliado. Se conservan el inicio de sesión de Supabase, el registro con confirmación, recuperación y navegación Atrás. La etiqueta de acceso es «Ingresar»; «Crear cuenta» conduce al registro existente. Google se muestra solo si está habilitado en la configuración. No se modifica el backend ni las tablas por este cambio. La apariencia final y los gestos requieren revisión en teléfono físico.
+
+
+### Ajuste visual · 1.3.5
+
+Se retira el ojo decorativo descentrado del fondo y se sustituye el borde blanco grueso del logo por un contorno suave y simétrico. La entrada distingue el crecimiento del logo, la aparición del título y el desplazamiento de textos, tarjeta y botones, con etapas de 1,6 segundos en total. Sigue respetando la reducción de movimiento y termina sin animaciones permanentes.

@@ -1,0 +1,6 @@
+# Copy to key.properties (ignored) or use RETINAZO_SIGNING_PROPERTIES.
+# Use an absolute path. Never commit actual credentials or the keystore.
+storeFile=/absolute/private/path/retinazo-release.p12
+storePassword=YOUR_PRIVATE_STORE_PASSWORD
+keyAlias=retinazo
+keyPassword=YOUR_PRIVATE_KEY_PASSWORD

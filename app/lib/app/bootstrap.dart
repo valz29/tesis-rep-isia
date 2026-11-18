@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../core/theme/app_theme.dart';
+import '../core/app_theme.dart';
 import 'app.dart';
+import 'app_config.dart';
 import 'auth_link_coordinator.dart';
-import 'config/app_config.dart';
 import 'dependencies.dart';
 
 class AppBootstrap extends StatefulWidget {

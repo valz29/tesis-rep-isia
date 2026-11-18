@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:rd_app/features/patients/data/repositories/supabase_patient_repository.dart';
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
+import 'package:rd_app/features/patients/data/supabase_patient_repository.dart';
+import 'package:rd_app/features/patients/domain/patient.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {

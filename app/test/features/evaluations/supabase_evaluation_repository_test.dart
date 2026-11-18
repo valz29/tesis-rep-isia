@@ -1,15 +1,16 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart' hide Evaluation;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:rd_app/features/evaluations/data/datasources/image_api_client.dart';
-import 'package:rd_app/features/evaluations/data/models/evaluation_mapper.dart';
-import 'package:rd_app/features/evaluations/data/repositories/supabase_evaluation_repository.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_draft.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
+import 'package:rd_app/features/evaluations/data/evaluation_mapper.dart';
+import 'package:rd_app/features/evaluations/data/image_api_client.dart';
+import 'package:rd_app/features/evaluations/data/supabase_evaluation_repository.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_draft.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../support/fixtures.dart';
@@ -39,6 +40,58 @@ Map<String, dynamic> storedRow() => {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('Thumbnail queue permits two requests, deduplicates and limits additional work', () async {
+    final started = Completer<void>();
+    final release = Completer<void>();
+    var active = 0;
+    var maximum = 0;
+    var calls = 0;
+    final transport = MockClient((request) async {
+      calls++;
+      active++;
+      if (active > maximum) maximum = active;
+      if (calls == 2) started.complete();
+      await release.future;
+      active--;
+      return http.Response.bytes(
+        photo(1),
+        200,
+        headers: {'content-type': 'image/jpeg'},
+      );
+    });
+    final db = SupabaseClient(
+      'https://example.invalid',
+      'sb_publishable_test',
+      authOptions: const AuthClientOptions(autoRefreshToken: false),
+    );
+    addTearDown(db.dispose);
+    addTearDown(transport.close);
+    final repo = SupabaseEvaluationRepository(
+      db,
+      imageApi: ImageApiClient(
+        Uri.parse('https://images.example.invalid'),
+        () => 'synthetic',
+        transport: transport,
+      ),
+    );
+    final records = [
+      for (var n = 1; n <= 3; n++)
+        EvaluationMapper.fromJson({
+          ...storedRow(),
+          'id': '30000000-0000-0000-0000-00000000000$n',
+        }),
+    ];
+    final futures = [for (final record in records) repo.loadThumbnail(record)];
+    final duplicate = repo.loadThumbnail(records.first);
+    await started.future;
+    expect(calls, 2);
+    release.complete();
+    final results = await Future.wait([...futures, duplicate]);
+    expect(calls, 3);
+    expect(maximum, 2);
+    expect(identical(results.first, results.last), isTrue);
+  });
 
   test('Successful save reads only the saved record and returns its confirmed storage status', () async {
     var queries = 0;
@@ -104,6 +157,14 @@ void main() {
       );
       addTearDown(database.dispose);
       final transport = MockClient((request) async {
+        if (request.url.path.endsWith('/thumbnail')) {
+          imageDownloads++;
+          return http.Response.bytes(
+            photo(1),
+            200,
+            headers: {'content-type': 'image/jpeg'},
+          );
+        }
         if (request.url.host == 'images.example.invalid') {
           return http.Response(
             jsonEncode({

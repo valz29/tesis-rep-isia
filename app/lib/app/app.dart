@@ -1,35 +1,23 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/app_theme.dart';
+import '../core/app_theme.dart';
 import 'app_scope.dart';
 import 'auth_gate.dart';
 import 'dependencies.dart';
 
-class RetinazoApp extends StatefulWidget {
-  /// Injected dependencies are owned by the caller; defaults belong to the app.
-  final AppDependencies? dependencies;
-  const RetinazoApp({super.key, this.dependencies});
-  @override
-  State<RetinazoApp> createState() => _RetinazoAppState();
-}
-
-class _RetinazoAppState extends State<RetinazoApp> {
-  late final AppDependencies _dependencies =
-      widget.dependencies ?? AppDependencies.inMemory();
-  @override
-  void dispose() {
-    if (widget.dependencies == null) _dependencies.dispose();
-    super.dispose();
-  }
+/// Dependencies are composed and disposed by the caller (AppBootstrap in production).
+class RetinazoApp extends StatelessWidget {
+  final AppDependencies dependencies;
+  const RetinazoApp({super.key, required this.dependencies});
 
   @override
   Widget build(BuildContext context) => AppScope(
-    session: _dependencies.session,
+    session: dependencies.session,
     child: MaterialApp(
       title: 'Retinazo',
       theme: AppTheme.light(),
       debugShowCheckedModeBanner: false,
-      home: AuthGate(session: _dependencies.session),
+      home: AuthGate(session: dependencies.session),
     ),
   );
 }

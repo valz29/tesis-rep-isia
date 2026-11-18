@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rd_app/features/admin/data/models/admin_mapper.dart';
-import 'package:rd_app/features/auth/domain/entities/staff_member.dart';
+import 'package:rd_app/features/admin/data/admin_mapper.dart';
+import 'package:rd_app/features/auth/domain/staff_member.dart';
 
 void main() {
   test(

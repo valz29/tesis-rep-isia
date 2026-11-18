@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../core/errors/app_failure.dart';
-import '../features/admin/presentation/controllers/admin_controller.dart';
-import '../features/auth/domain/entities/auth_session_event.dart';
-import '../features/auth/presentation/controllers/auth_controller.dart';
-import '../features/evaluations/domain/usecases/select_evaluation_image.dart';
-import '../features/evaluations/presentation/controllers/capture_controller.dart';
-import '../features/evaluations/presentation/controllers/evaluations_controller.dart';
-import '../features/patients/domain/entities/patient.dart';
-import '../features/patients/presentation/controllers/patients_controller.dart';
+import '../core/app_failure.dart';
+import '../features/admin/presentation/admin_controller.dart';
+import '../features/auth/domain/auth_session_event.dart';
+import '../features/auth/presentation/auth_controller.dart';
+import '../features/evaluations/domain/select_evaluation_image.dart';
+import '../features/evaluations/presentation/capture_controller.dart';
+import '../features/evaluations/presentation/evaluations_controller.dart';
+import '../features/patients/domain/patient.dart';
+import '../features/patients/presentation/patients_controller.dart';
 
 class SessionController extends ChangeNotifier {
   final AuthController auth;

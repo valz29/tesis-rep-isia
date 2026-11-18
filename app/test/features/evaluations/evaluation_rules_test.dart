@@ -1,16 +1,16 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart' hide Evaluation;
-import 'package:rd_app/core/errors/app_failure.dart';
-import 'package:rd_app/features/evaluations/data/repositories/in_memory_evaluation_repository.dart';
-import 'package:rd_app/features/evaluations/domain/entities/detection_result.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_draft.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
-import 'package:rd_app/features/evaluations/domain/usecases/create_evaluation.dart';
-import 'package:rd_app/features/evaluations/domain/usecases/save_evaluation.dart';
-import 'package:rd_app/features/patients/data/repositories/in_memory_patient_repository.dart';
+import 'package:rd_app/core/app_failure.dart';
+import 'package:rd_app/features/evaluations/domain/create_evaluation.dart';
+import 'package:rd_app/features/evaluations/domain/detection_result.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_draft.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image.dart';
+import 'package:rd_app/features/evaluations/domain/save_evaluation.dart';
 
+import '../../support/fakes/in_memory_evaluation_repository.dart';
+import '../../support/fakes/in_memory_patient_repository.dart';
 import '../../support/fixtures.dart';
 
 List<EvaluationImage> images() => [

@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../features/auth/presentation/pages/reset_password_screen.dart';
-import '../features/auth/presentation/pages/welcome_screen.dart';
-import '../features/home/presentation/pages/home_screen.dart';
+import '../features/auth/presentation/reset_password_screen.dart';
+import '../features/auth/presentation/welcome_screen.dart';
+import '../features/home/presentation/home_screen.dart';
 import 'session_controller.dart';
 
 /// Replaces the complete navigation stack when the authenticated identity changes.
@@ -16,6 +16,8 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
+  GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  String? _identity;
   @override
   void initState() {
     super.initState();
@@ -71,9 +73,17 @@ class _AuthGateState extends State<AuthGate> {
           : s.auth.personal == null
           ? const WelcomeScreen()
           : HomeScreen(sesion: s);
-      return Navigator(
-        key: ValueKey(key),
-        onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (_) => page),
+      if (_identity != key) {
+        _identity = key;
+        _navigatorKey = GlobalKey<NavigatorState>();
+      }
+      return NavigatorPopHandler<Object?>(
+        onPopWithResult: (result) =>
+            _navigatorKey.currentState?.maybePop(result),
+        child: Navigator(
+          key: _navigatorKey,
+          onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (_) => page),
+        ),
       );
     },
   );

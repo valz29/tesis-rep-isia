@@ -4,14 +4,24 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:rd_app/app/app_scope.dart';
 import 'package:rd_app/app/dependencies.dart';
-import 'package:rd_app/core/theme/app_theme.dart';
-import 'package:rd_app/features/auth/data/repositories/preview_auth_repository.dart';
-import 'package:rd_app/features/evaluations/data/repositories/in_memory_evaluation_repository.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
-import 'package:rd_app/features/evaluations/domain/repositories/evaluation_repository.dart';
-import 'package:rd_app/features/evaluations/domain/repositories/image_acquisition_repository.dart';
-import 'package:rd_app/features/patients/data/repositories/in_memory_patient_repository.dart';
-import 'package:rd_app/features/patients/domain/entities/patient.dart';
+import 'package:rd_app/core/app_theme.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_repository.dart';
+import 'package:rd_app/features/evaluations/domain/image_acquisition_repository.dart';
+import 'package:rd_app/features/patients/domain/patient.dart';
+
+import 'fakes/in_memory_admin_repository.dart';
+import 'fakes/in_memory_evaluation_repository.dart';
+import 'fakes/in_memory_patient_repository.dart';
+import 'fakes/preview_auth_repository.dart';
+
+AppDependencies memoryDependencies() => AppDependencies(
+  authRepository: PreviewAuthRepository(),
+  patientRepository: InMemoryPatientRepository(),
+  evaluationRepository: InMemoryEvaluationRepository(),
+  imageRepository: TestImageRepository(),
+  adminRepository: InMemoryAdminRepository(),
+);
 
 final patient = Patient(
   id: 'patient-1',
@@ -44,6 +54,7 @@ Future<AppDependencies> createDependencies({
   if (seedPatient) await patients.save(patient);
   final dependencies = AppDependencies(
     authRepository: PreviewAuthRepository(),
+    adminRepository: InMemoryAdminRepository(),
     patientRepository: patients,
     evaluationRepository: evaluations ?? InMemoryEvaluationRepository(),
     imageRepository: images ?? TestImageRepository(),

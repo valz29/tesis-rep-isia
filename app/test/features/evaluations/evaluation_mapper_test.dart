@@ -1,10 +1,10 @@
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart' hide Evaluation;
-import 'package:rd_app/core/errors/app_failure.dart';
-import 'package:rd_app/features/evaluations/data/models/evaluation_mapper.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_draft.dart';
-import 'package:rd_app/features/evaluations/domain/entities/evaluation_image.dart';
+import 'package:rd_app/core/app_failure.dart';
+import 'package:rd_app/features/evaluations/data/evaluation_mapper.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_draft.dart';
+import 'package:rd_app/features/evaluations/domain/evaluation_image.dart';
 
 import '../../support/fixtures.dart';
 
